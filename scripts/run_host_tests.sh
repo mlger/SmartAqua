@@ -10,13 +10,14 @@ set -e
 cd "$(dirname "$0")/.."
 
 LIB=arduino/libraries/SmartAquaCore/src
-OUT=/home/z/my-project/tools/saq_test
+OUT=$(mktemp -d)
+trap 'rm -rf "$OUT"' EXIT
 
-g++ -Wall -Wextra -O2 -I "$LIB" -c "$LIB/saq_protocol.cpp" -o /home/z/my-project/tools/saq_protocol.o
-g++ -Wall -Wextra -O2 -I "$LIB" -c "$LIB/saq_schedule.cpp"  -o /home/z/my-project/tools/saq_schedule.o
-g++ -Wall -Wextra -O2 -I "$LIB" -c "$LIB/saq_portion.cpp"   -o /home/z/my-project/tools/saq_portion.o
+g++ -Wall -Wextra -O2 -I "$LIB" -c "$LIB/saq_protocol.cpp" -o "$OUT/saq_protocol.o"
+g++ -Wall -Wextra -O2 -I "$LIB" -c "$LIB/saq_schedule.cpp" -o "$OUT/saq_schedule.o"
+g++ -Wall -Wextra -O2 -I "$LIB" -c "$LIB/saq_portion.cpp" -o "$OUT/saq_portion.o"
 gcc -std=c99 -Wall -Wextra -O2 -I "$LIB" scripts/test_saq_core.c \
-    /home/z/my-project/tools/saq_protocol.o /home/z/my-project/tools/saq_schedule.o /home/z/my-project/tools/saq_portion.o \
-    -o "$OUT"
+    "$OUT/saq_protocol.o" "$OUT/saq_schedule.o" "$OUT/saq_portion.o" \
+    -o "$OUT/saq_test"
 
-"$OUT"
+"$OUT/saq_test"
