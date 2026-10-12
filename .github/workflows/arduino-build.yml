@@ -1,0 +1,77 @@
+name: arduino-build
+
+on:
+  push:
+    paths:
+      - 'arduino/**'
+      - 'scripts/run_host_tests.sh'
+      - 'scripts/test_saq_core.c'
+      - '.github/workflows/arduino-build.yml'
+  pull_request:
+    paths:
+      - 'arduino/**'
+      - 'scripts/run_host_tests.sh'
+      - 'scripts/test_saq_core.c'
+      - '.github/workflows/arduino-build.yml'
+  workflow_dispatch:
+
+jobs:
+  host-tests:
+    name: SmartAquaCore host unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run host tests (protocol vectors, schedule, clamp)
+        run: |
+          chmod +x scripts/run_host_tests.sh
+          scripts/run_host_tests.sh
+
+  build:
+    name: compile ${{ matrix.sketch }}
+    runs-on: ubuntu-latest
+    needs: host-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sketch: SmartAquaFeeder
+            fqbn: 'esp32:esp32:esp32'
+          - sketch: SmartAquaHMI
+            fqbn: 'esp32:esp32:esp32s3:PSRAM=opi,FlashSize=16M,CDCOnBoot=cdc,USBMode=hwcdc,PartitionScheme=huge_app'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install arduino-cli
+        run: |
+          curl -fsSL https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz \
+            | tar xz -C /usr/local/bin arduino-cli
+          arduino-cli config init --dest-file "$HOME/.arduino15/arduino-cli.yaml" --overwrite
+          arduino-cli config set board_manager.additional_urls \
+            https://espressif.github.io/arduino-esp32/package_esp32_index.json \
+            --config-file "$HOME/.arduino15/arduino-cli.yaml"
+          arduino-cli core update-index --config-file "$HOME/.arduino15/arduino-cli.yaml"
+          arduino-cli core install esp32:esp32@3.1.1 --config-file "$HOME/.arduino15/arduino-cli.yaml"
+
+      - name: Install libraries (pinned to the vendored versions)
+        run: |
+          arduino-cli lib install "lvgl@8.4.0" \
+            "ESP32_Display_Panel@1.0.0" \
+            "ESP32_IO_Expander@1.0.1" \
+            "esp-lib-utils@0.1.2" \
+            --config-file "$HOME/.arduino15/arduino-cli.yaml"
+
+      - name: Place lv_conf.h and SmartAquaCore
+        run: |
+          # LVGL 8 reads its config from the library folder
+          cp arduino/SmartAquaHMI/lv_conf.h "$HOME/Arduino/libraries/lvgl/lv_conf.h"
+          # The shared library ships in-repo
+          mkdir -p "$HOME/Arduino/libraries"
+          cp -r arduino/libraries/SmartAquaCore "$HOME/Arduino/libraries/"
+
+      - name: Compile
+        run: |
+          arduino-cli compile \
+            --fqbn "${{ matrix.fqbn }}" \
+            --warnings default \
+            --config-file "$HOME/.arduino15/arduino-cli.yaml" \
+            "arduino/${{ matrix.sketch }}"
