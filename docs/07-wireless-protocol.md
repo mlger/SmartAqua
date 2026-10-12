@@ -3,6 +3,17 @@
 Both firmwares implement this document. If they disagree, fish go unfed. Treat it as a contract:
 changes require a protocol version bump, and both apps get reflashed together.
 
+## Protocol history
+
+| Version | Byte | Change |
+| --- | --- | --- |
+| 1.0 | `0x10` | The original framing, packet catalogue, and test vectors 1–9. |
+| 1.1 | `0x11` | Additive, per the rules below: new downlink `SET_CONFIG` (`0x16`), new
+uplink `LOG_ENTRY` (`0x94`) for history reconciliation, and a 4-byte config
+tail on `STATUS`. A 1.1 decoder reads 1.0 frames; a 1.0 decoder ignores the
+1.1 additions (trailing bytes are ignored by design). Both firmwares in this
+repo speak 1.1. |
+
 ## ESP-NOW in one paragraph
 
 ESP-NOW is Espressif's connectionless 2.4 GHz peer-to-peer protocol. No router, no association, no
@@ -95,7 +106,7 @@ capped at **238 bytes**.
 | Offset | Size | Field | Notes |
 | --- | --- | --- | --- |
 | 0 | 1 | `magic` | `0xA5`. Anything else is discarded before parsing. |
-| 1 | 1 | `version` | High nibble major, low nibble minor. This document describes **1.0** = `0x10`. |
+| 1 | 1 | `version` | High nibble major, low nibble minor. This document describes **1.1** = `0x11`. Major must match; minor is informative. |
 | 2 | 1 | `type` | See the packet catalogue. |
 | 3 | 1 | `flags` | Bit 0 `ACK_REQUIRED`, bit 1 `IS_RESPONSE`. Others reserved, must be 0. |
 | 4 | 4 | `seq` | `u32` LE. Monotonically increasing per sender, per direction. |
@@ -126,6 +137,7 @@ Rules:
 | `0x13` | `SET_SCHEDULE_ENTRY` | ACK_REQUIRED | `index u8`, `count u8`, `entry[8]` | Write one schedule slot. |
 | `0x14` | `STATUS_REQ` | ACK_REQUIRED | `since_seq u32` | Ask for status and any log entries after `since_seq`. |
 | `0x15` | `PAIR_REQ` | ACK_REQUIRED | `node_id u8` | Claim this feeder during a pairing window. |
+| `0x16` | `SET_CONFIG` | ACK_REQUIRED | `ms_per_g u16`, `default_portion_g u16` | v1.1. Write the feeder's calibration and default portion (the guided calibration flow on the HMI). |
 
 ### Uplink — feeder node → HMI
 
@@ -137,11 +149,16 @@ Rules:
 | `0x91` | `FEED_DONE` | — | `portion_g u16`, `actual_ms u16`, `trigger u8`, `result u8` | A feed finished. |
 | `0x92` | `FAULT` | — | `code u16`, `detail u16` | Something is wrong. |
 | `0x93` | `BEACON` | — | `node_id u8`, `fw_major u8`, `fw_minor u8`, `hopper_pct u8` | Broadcast during a pairing window only. |
+| `0x94` | `LOG_ENTRY` | — | `log_seq u32`, `event_epoch u32`, `portion_g u16`, `actual_ms u16`, `trigger u8`, `result u8` (14 bytes) | v1.1. One retained log entry, replayed in response to `STATUS_REQ(since_seq)` so the HMI can reconcile history after being offline. |
 
 `result` codes: `0x00` ok, `0x01` rejected-duration, `0x02` busy, `0x03` unsupported-type,
 `0x04` bad-payload, `0x05` not-paired, `0x06` clock-unsynced.
 
-`trigger` for `FEED_DONE`: `0x00` scheduled, `0x01` manual from HMI, `0x02` local button.
+`trigger` for `FEED_DONE`/`LOG_ENTRY`: `0x00` scheduled, `0x01` manual from HMI, `0x02` local button.
+
+`result` for `FEED_DONE`/`LOG_ENTRY` (feed outcome, distinct from the ACK result codes):
+`0x00` completed, `0x01` clamped by `MAX_FEED_MS`, `0x02` interrupted (reboot mid-feed),
+`0x03` stopped by a `STOP` command.
 
 `STATUS` payload:
 
@@ -154,6 +171,11 @@ Rules:
 | 7 | 4 | `last_log_seq` (`u32`) — what the HMI should ask from next |
 | 11 | 4 | `uptime_s` (`u32`) |
 | 15 | 4 | `link_seq` (`u32`) — feeder's own outbound sequence |
+| 19 | 2 | `ms_per_g` (`u16`) — v1.1 tail: current calibration |
+| 21 | 2 | `default_portion_g` (`u16`) — v1.1 tail |
+
+The v1.0 payload is the first 19 bytes; v1.1 sends 23. A decoder must accept
+both (ignore trailing bytes), which is what makes the tail an additive change.
 
 `hopper_pct` of 255 means "no sensor fitted" rather than 0. Distinguishing unknown from empty matters:
 a UI that shows "0%" for a missing sensor trains the user to ignore the field.
@@ -250,13 +272,21 @@ change breaks one of these, the change is wrong or the version needs bumping.
 | 7 | Reject | major version `0x20` → byte 1 = `20` | decode returns `VERSION_MISMATCH` |
 | 8 | Reject | unknown type `0x77` | decode returns `UNKNOWN_TYPE` |
 | 9 | Dedupe | `FEED` seq 42 delivered twice | feeds once, ACKs twice |
+| 10 | `SET_CONFIG` | seq 44, epoch 1735689600, 6000 ms/g, default 3 g | `A5 11 16 01 2C 00 00 00 80 85 74 67 70 17 03 00` (16 bytes) |
+| 11 | `LOG_ENTRY` | seq 8, epoch 1735689600, log_seq 13, event 1735603200, 3 g, 18000 ms, scheduled, completed | `A5 11 94 00 08 00 00 00 80 85 74 67 0D 00 00 00 00 34 73 67 03 00 50 46 00 00` (26 bytes) |
+| 12 | `STATUS` v1.1 | vector 5's fields plus 6000 ms/g and 3 g default | `A5 11 90 00 07 00 00 00 80 85 74 67 01 04 00 34 73 67 50 0C 00 00 00 10 0E 00 00 07 00 00 00 70 17 03 00` (35 bytes) |
 
 Byte counts, so a codec bug is obvious at a glance: vector 1 = 16, vector 2 = 12 (a `STOP` is
 header-only — there is no payload to count), vectors 3 and 4 = 17, vector 5 = 31 (the `STATUS`
-payload is the full 19 bytes of the table above, `link_seq` included). Vector 4 exists to pin down
+payload is the full 19 bytes of the table above, `link_seq` included), vector 10 = 16, vector 11 = 26
+(a 14-byte payload), vector 12 = 35 (a 23-byte payload). Vector 4 exists to pin down
 that **epoch 0 decodes as "clock unsynced", not as an error** — a receiver that rejects a zero
 timestamp would refuse every frame from a node that has just booted, which is exactly when you most
 want to talk to it.
+
+Vectors 1–9 are pinned at v1.0 (`0x10`) exactly as originally published; vectors 10–12 are the
+v1.1 additions. All of them run in the boot-time self-test of both firmwares and in
+`scripts/run_host_tests.sh`.
 
 Every one of these is testable with no board attached. That is the point of keeping the codec in
 `components/` with no IDF dependency — see
