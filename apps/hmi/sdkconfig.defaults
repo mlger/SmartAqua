@@ -1,0 +1,48 @@
+# SmartAqua HMI — ESP32-S3-Touch-LCD-4.3B
+#
+# Values derived from the Waveshare demo package:
+#   ESP32-S3-Touch-LCD-4.3B-BOX-Demo/ESP-IDF/08_lvgl_Porting/sdkconfig.defaults
+#
+# These are REQUIRED for this board. The RGB panel does not produce a stable
+# image without them. See docs/05-firmware-workflow.md for what each one does.
+
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# 16 MB QIO flash at 80 MHz
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# Octal PSRAM. The RGB framebuffers live here; do not disable to save memory.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_FETCH_INSTRUCTIONS=y
+CONFIG_SPIRAM_RODATA=y
+
+CONFIG_FREERTOS_HZ=1000
+
+# The 64-byte data cache line is what the vendor's RGB path expects.
+CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
+CONFIG_ESP32S3_DATA_CACHE_LINE_SIZE=64
+
+# Logs go out the native USB port. This is also why no UART driver is needed
+# for the HMI.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# --- LVGL ------------------------------------------------------------------
+# Uncomment this block once lvgl/lvgl is added as a dependency in
+# main/idf_component.yml. Until then these symbols do not exist and would be
+# ignored (or warned about) at configure time.
+#
+# CONFIG_LV_COLOR_SCREEN_TRANSP=y
+# CONFIG_LV_MEM_CUSTOM=y
+# CONFIG_LV_MEMCPY_MEMSET_STD=y
+# CONFIG_LV_USE_LOG=y
+# CONFIG_LV_LOG_PRINTF=y
+# CONFIG_LV_USE_PERF_MONITOR=y
+# CONFIG_LV_ATTRIBUTE_FAST_MEM_USE_IRAM=y
+# CONFIG_LV_FONT_MONTSERRAT_16=y
+# CONFIG_LV_FONT_MONTSERRAT_20=y
+# CONFIG_LV_FONT_MONTSERRAT_24=y

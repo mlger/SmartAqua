@@ -1,0 +1,43 @@
+# --- ESP-IDF build output -------------------------------------------------
+build/
+managed_components/
+sdkconfig
+sdkconfig.old
+*.elf
+*.map
+*.bin
+*.hex
+flasher_args.json
+flash_args
+flash_project_args
+compile_commands.json
+size*.txt
+
+# --- Vendor reference material (large, deliberately unversioned) -----------
+# The Waveshare demo package is ~93 MB. Its pin maps and versions are captured
+# in docs/02-hardware-and-wiring.md and docs/08-testing-and-bringup.md instead.
+*.zip
+ESP32-S3-Touch-LCD-4.3B-BOX-Demo/
+
+# --- Design exports -------------------------------------------------------
+# Figma is the source of truth; exported PNG/SVG are build artifacts.
+design/exports/
+
+# --- Editors and IDEs ----------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Python (host tests, tooling) ----------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+pytest_embedded_log/
+
+# --- OS cruft ------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store

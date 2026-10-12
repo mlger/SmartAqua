@@ -1,0 +1,30 @@
+# SmartAqua feeder node — classic ESP32
+#
+# Adjust CONFIG_ESPTOOLPY_FLASHSIZE_* to match your actual module. 4 MB is
+# typical for ESP32-WROOM-32. A mismatch causes a boot loop that looks like a
+# firmware bug.
+#
+# See docs/05-firmware-workflow.md for the partition layout and why the feeder
+# node needs a custom table from the start.
+
+CONFIG_IDF_TARGET="esp32"
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# Two app slots, so OTA is possible later. This cannot be retrofitted without a
+# serial reflash, because changing the partition table is not an OTA-able
+# operation.
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+CONFIG_FREERTOS_HZ=1000
+
+# The feeder node has no display, so it logs over the UART bridge the devkit
+# already carries.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+
+# Enable once OTA is implemented. The app must then call
+# esp_ota_mark_app_valid_cancel_rollback() only after it has proven it can reach
+# the network AND actuate the relay.
+# CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y

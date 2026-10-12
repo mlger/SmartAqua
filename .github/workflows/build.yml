@@ -1,0 +1,75 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Builds both firmwares. The two apps target different chips, which is exactly
+  # why they are separate apps and why this is a matrix.
+  firmware:
+    name: ${{ matrix.app }} (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: apps/hmi
+            target: esp32s3
+          - app: apps/feeder
+            target: esp32
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.2.0
+          target: ${{ matrix.target }}
+          path: ${{ matrix.app }}
+
+  # Host-side unit tests for components/ — the logic that has no IDF dependency
+  # and therefore needs no board. Skipped until tests/host exists, so this lane
+  # activates by itself when the first real test lands.
+  host-tests:
+    name: host unit tests
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('tests/host/CMakeLists.txt') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S tests/host -B build/host -G Ninja
+
+      - name: Build
+        run: cmake --build build/host
+
+      - name: Test
+        run: ctest --test-dir build/host --output-on-failure
+
+  # Enforces .clang-format. Requires clang-format to be installed locally too —
+  # see the note in docs/04-repo-and-git-workflow.md.
+  format:
+    name: clang-format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Check C/C++ formatting
+        run: |
+          files=$(git ls-files '*.c' '*.h' '*.cpp' '*.hpp' || true)
+          if [ -z "$files" ]; then
+            echo "No C/C++ files yet — nothing to check."
+            exit 0
+          fi
+          echo "$files" | xargs clang-format --dry-run --Werror
