@@ -36,22 +36,25 @@ jobs:
           path: ${{ matrix.app }}
 
   # Host-side unit tests for components/ — the logic that has no IDF dependency
-  # and therefore needs no board. Skipped until tests/host exists, so this lane
-  # activates by itself when the first real test lands.
+  # and therefore needs no board. The lane activates by itself when tests/host
+  # lands: the guards are step-level because hashFiles() is not allowed in a
+  # job-level `if` (that mistake is why this workflow could never start).
   host-tests:
     name: host unit tests
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('tests/host/CMakeLists.txt') != '' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure
+        if: hashFiles('tests/host/CMakeLists.txt') != ''
         run: cmake -S tests/host -B build/host -G Ninja
 
       - name: Build
+        if: hashFiles('tests/host/CMakeLists.txt') != ''
         run: cmake --build build/host
 
       - name: Test
+        if: hashFiles('tests/host/CMakeLists.txt') != ''
         run: ctest --test-dir build/host --output-on-failure
 
   # Enforces .clang-format. Requires clang-format to be installed locally too —
