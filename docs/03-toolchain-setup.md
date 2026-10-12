@@ -97,25 +97,36 @@ Useful companion extensions: `ms-vscode.cpptools`, `EditorConfig.EditorConfig`,
 
 | Board | Driver needed |
 | --- | --- |
-| ESP32-S3-Touch-LCD-4.3B (HMI) | **None.** It uses the ESP32-S3's native USB-Serial-JTAG peripheral. Windows 11 recognises it out of the box. |
+| ESP32-S3-Touch-LCD-4.3B (HMI) | Depends on which side of the board's USB switch the port is routed to: the ESP32-S3's native USB-Serial-JTAG needs **no driver** on Windows 11, but the onboard **CH343** USB-UART bridge needs WCH's driver (CH343SER). Windows often fetches it via Windows Update — if a COM port shows a warning triangle in Device Manager, install it from WCH's site. |
 | Classic ESP32 devkit (feeder) | **Yes**, whichever UART bridge it carries — CP2102 (Silicon Labs) or CH340/CH9102 (WCH). Install the vendor driver. |
 
 If no port appears, or you see an unknown device, it is almost always a missing UART driver or a
 charge-only USB cable. Charge-only cables are a genuinely common trap — they look identical.
 
-## 5. Board ports, and the two-port gotcha
+## 5. The single USB-C port and the USB_SEL switch
 
-The S3 board exposes **two USB-C ports**, and which one is live is selected by **CH422G expander pin
-5** (`USB_SEL`). If you plug into the wrong port, or the firmware has driven `USB_SEL` the wrong way,
-the board looks completely dead: no COM port, no download mode, nothing on the monitor. Before you
+The S3 board has **one USB-C port**, and what sits behind it is switchable: an **FSUSB42** analog
+switch routes the port's data lines either to the ESP32-S3's native USB (GPIO 19/20,
+USB-Serial-JTAG) or to the onboard **CH343** USB-UART bridge, which lands on UART0 (GPIO 43/44 —
+the same UART the RS485 transceiver uses). The switch is steered by CH422G expander pin 5, which
+the vendor's Arduino demos call `USB_SEL` and drive **low** for normal native-USB operation
+(`03_SD_Test.ino:23-24`; high, per the vendor's comment, disables the USB function).
+
+The failure this produces is subtle: if the port is routed to the CH343 when you expect
+USB-Serial-JTAG (or the other way round), you get a *different COM port than expected* — or none at
+all, if the needed driver is missing — and the board looks dead even though it is fine. Before you
 conclude the board is broken:
 
-1. Try the other USB-C port.
-2. Hold BOOT, tap RST, release BOOT to force download mode.
+1. Check Device Manager: which COM port appeared, and under what device? USB-Serial-JTAG shows up as
+   a USB Serial Device; the CH343 shows as a WCH USB-SERIAL device (driver permitting).
+2. If nothing appears, hold **BOOT**, tap **RST**, release BOOT to force download mode — the ROM
+   bootloader answers on UART0, which the CH343 can always reach. (This is also the wiki's own
+   advice for an unrecognised port.)
 3. Only then start debugging the firmware.
 
 This is the single most common 20-minute time sink on this board. It is documented here so it does not
-cost you that twice.
+cost you that twice. See [02-hardware-and-wiring.md](02-hardware-and-wiring.md#hmi-board--ch422g-expander)
+for the expander pin involved and the *Verify first* item for what to bench-check.
 
 Find the port after plugging in:
 
@@ -169,7 +180,8 @@ esptool.py version
 - [ ] `idf.py --list-targets` includes both `esp32` and `esp32s3`
 - [ ] `git --version` works
 - [ ] `gh auth status` shows you logged in
-- [ ] The HMI board enumerates a COM port on one of its two USB-C ports
+- [ ] The HMI board enumerates a COM port on its USB-C port — note in Device Manager whether it is
+      USB-Serial-JTAG or the CH343, and that the CH343 driver is installed
 - [ ] The feeder node enumerates a COM port (driver installed)
 - [ ] `apps/hmi` builds: `cd apps/hmi && idf.py set-target esp32s3 && idf.py build`
 - [ ] `apps/feeder` builds: `cd apps/feeder && idf.py set-target esp32 && idf.py build`

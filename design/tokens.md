@@ -11,14 +11,15 @@ if you like, but keep the structure and the naming, and re-check contrast after 
 
 | Property | Value |
 | --- | --- |
-| Resolution | **800 × 480** (verify — see [../docs/02-hardware-and-wiring.md](../docs/02-hardware-and-wiring.md#verify-first--before-you-wire-anything)) |
+| Resolution | **800 × 480** — confirmed by the wiki spec table for this product (the demo code's 1024 × 600 option is shared codebase, not a board variant); still bench-confirm with the colour-bar test per [../docs/08-testing-and-bringup.md](../docs/08-testing-and-bringup.md#settle-the-panel-question-now) |
 | Colour depth | 16-bit RGB565 |
 | Orientation | Landscape only, rotation 0° |
 | Touch | Capacitive, GT911 |
 
-If your board turns out to be the 1024 × 600 variant, the grid below still applies but the margins and
-tab-bar height should be revisited — and the Figma frames must be redrawn at the correct size before
-anyone designs in them.
+If your physical unit somehow draws correctly with the 1024 × 600 colour bar instead (a board
+revision, not a documented variant), the grid below still applies but the margins and tab-bar height
+should be revisited — and the Figma frames must be redrawn at the correct size before anyone designs
+in them.
 
 ## Colour
 

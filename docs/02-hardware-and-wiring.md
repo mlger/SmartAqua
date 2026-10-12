@@ -10,8 +10,13 @@ Vendor reference, referred to below as *the package*:
 ESP32-S3-Touch-LCD-4.3B-BOX-Demo/          (extracted from ESP32-S3-Touch-LCD-4.3B-BOX-Demo.zip)
 ```
 
+The download lives on the [Waveshare wiki](https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-4.3B).
+The wiki's own *Flash Firmware* section refers to `ESP32-S3-Touch-LCD-4.3B-Demo\Firmware\bin` — same
+package, inconsistent wiki naming. The zip file's name is the one above.
+
 It is gitignored — 93 MB — but the facts below are quoted from it so future readers do not need it on
-disk. If you re-download it, the paths in the *Source* column will resolve.
+disk. If you re-download it, the paths in the *Source* column will resolve. Facts marked **wiki** were
+cross-checked against the wiki page itself (spec tables, pinouts, and the schematic PDF it links).
 
 ## Bill of materials
 
@@ -34,13 +39,15 @@ disk. If you re-download it, the paths in the *Source* column will resolve.
 | Target | `esp32s3`, 240 MHz | `ESP-IDF/08_lvgl_Porting/sdkconfig.defaults` |
 | Flash | 16 MB, QIO, 80 MHz | same |
 | PSRAM | Octal, 80 MHz, fetch-instructions + rodata | same |
-| Console | USB-Serial-JTAG (native USB, no driver needed) | same |
-| Panel | RGB 16-bit parallel, RGB565, 800 × 480 @ 16 MHz pclk (1024 × 600 @ 21 MHz variant) | `Arduino/examples/09_lvgl_Porting/esp_panel_board_custom_conf.h:104`, `ESP-IDF/08_lvgl_Porting/main/waveshare_rgb_lcd_port.h:36` |
-| Panel controller | **ST7262** (Arduino conf) / **ST7701** (IDF README) — revision-dependent, see *Verify first* | `esp_panel_board_custom_conf.h:68`, `ESP-IDF/08_lvgl_Porting/README.md:4` |
-| Touch | GT911 capacitive, I2C @ 400 kHz, `esp_lcd_touch_gt911` 1.1.1 | `ESP-IDF/08_lvgl_Porting/main/idf_component.yml` |
+| Console | USB-Serial-JTAG over the native USB (GPIO 19/20) — the vendor's chosen default. If the USB-C port is routed to the CH343 instead (see the USB row above), the console must be UART0 | same, plus `03_SD_Test.ino:23-24` |
+| Panel | RGB 16-bit parallel, RGB565, 800 × 480 @ 16 MHz pclk | `Arduino/examples/09_lvgl_Porting/esp_panel_board_custom_conf.h:104`, `ESP-IDF/08_lvgl_Porting/main/waveshare_rgb_lcd_port.h:36`, **wiki spec table** |
+| Panel controller | **ST7262** — the wiki's datasheet list, the Arduino demo configs (`EXAMPLE_LCD_NAME ST7262`), and the IO test's README all agree. The `ST7701` in the IDF example's README is stale boilerplate from the upstream Espressif example it derives from. Confirm on your unit with the colour-bar test anyway | `esp_panel_board_custom_conf.h:68`, `Arduino/examples/05_IO_Test/waveshare_io_port.h`, wiki datasheet links |
+| Touch | GT911 capacitive, I2C @ 400 kHz, `esp_lcd_touch_gt911` 1.1.1 | `ESP-IDF/08_lvgl_Porting/components/espressif__esp_lcd_touch_gt911/idf_component.yml` |
 | I2C bus | SDA 8, SCL 9, 400 kHz, port 0 | `waveshare_rgb_lcd_port.h:17-20` |
-| IO expander | CH422G at I2C address **0x20** | `esp_panel_board_custom_conf.h:351` |
+| IO expander | CH422G — 8 quasi-bidirectional pins (EXIO0–7) plus 4 output pins (OC0–3). Register-as-address device: it ACKs at its command addresses (0x23, 0x24, 0x26, 0x38 in the vendor driver), **not** one fixed slave address — see the expander section below | `ESP-IDF/05_IO_Test/lib/CH422G/CH422G.h`, `ESP-IDF/08_lvgl_Porting/components` driver source |
 | RTC | PCF85063A at I2C address **0x51** | `Arduino/examples/04_RTC_Test/waveshare_pcf85063a.h:33` |
+| RTC backup battery | CR927 coin cell in the onboard socket — without it the RTC loses time on power loss | wiki *Onboard Resources* item 20 |
+| USB | One USB-C port, routed through an FSUSB42 switch between the ESP32-S3 native USB (GPIO 19/20) and an onboard **CH343** USB-UART bridge on UART0 (GPIO 43/44) — see the toolchain doc's USB section | schematic, wiki component list |
 | LVGL | 8.4.0, constraint `>8.3.9,<9` | `ESP-IDF/08_lvgl_Porting/components/lvgl__lvgl/idf_component.yml` |
 
 ## HMI board — RGB LCD pin map
@@ -75,33 +82,52 @@ LCD reset and backlight are **not** GPIOs — they go through the expander. Ther
 | SD card, SPI mode | MOSI 11, CLK 12, MISO 13, CS = expander pin 4 | `Arduino/examples/03_SD_Test/waveshare_sd_card.h:20-23` |
 | RS485 | RX 43, TX 44 | `Arduino/examples/02_RS485_Test/02_RS485_Test.ino:2-3` |
 | CAN / TWAI | TX 15, RX 16 | `Arduino/examples/06_TWAItransmit/waveshare_twai_port.h:10-11` |
-| RTC alarm interrupt | GPIO 6 | `Arduino/examples/04_RTC_Test/waveshare_pcf85063a.h:30` |
-| Onboard button, IDF demo | GPIO 4 | `ESP-IDF/08_lvgl_Porting/main/waveshare_rgb_lcd_port.h:25` |
+| RTC alarm interrupt | GPIO 6 — confirmed in the schematic (`IO6 ↔ RTC_INT`) | `Arduino/examples/04_RTC_Test/waveshare_pcf85063a.h:30`, schematic, **wiki pinout** |
+| Touch IRQ | **GPIO 4 — this is the GT911's interrupt line (`TP_IRQ`), not an onboard button.** The wiki pinout and the schematic (`IO4 ↔ CTP_IRQ`) agree; the vendor's IDF demo merely configures it as a plain input and never uses it | **wiki pinout**, schematic, `waveshare_rgb_lcd_port.h:25` |
 
-`IMPORTANT` — `EXAMPLE_I2C_*` and `I2C_MASTER_*` macros are typed backwards from what you would
-expect in one place. In `waveshare_io_port.h` the constructor call is
-`CH422G(EXAMPLE_I2C_SCL_PIN, EXAMPLE_I2C_SDA_PIN, ...)` while the SD header declares
-`EXAMPLE_I2C_SDA_PIN 8`. Both agree on the physical result (SDA 8, SCL 9), but do not copy a macro
-name at face value — the vendor's naming is inconsistent across examples. Verify against the GPIO
-number, which is consistent everywhere.
+`IMPORTANT` — the vendor's macro and argument naming around I2C is inconsistent, so do not copy a
+name at face value. The vendored `ESP32_IO_Expander` library's constructor is
+`CH422G(int scl_io, int sda_io, uint8_t address)` — **scl first**, which is the opposite of most
+Arduino libraries — and the demo sketches pass `(EXAMPLE_I2C_SCL_PIN, EXAMPLE_I2C_SDA_PIN, ...)`
+while `waveshare_sd_card.h` declares `EXAMPLE_I2C_SDA_PIN 8` and `EXAMPLE_I2C_SCL_PIN 9`. The
+physical result is consistent everywhere (SDA 8, SCL 9), but verify against the GPIO number, not the
+macro name.
 
 ## HMI board — CH422G expander
 
-Address 0x20 on the shared I2C bus. The vendor driver calls `enableAllIO_Output()` at init
-(`esp_panel_board_custom_conf.h:369`), so every pin defaults to output.
+The CH422G is a **12-I/O** chip: eight quasi-bidirectional pins the vendor calls EXIO0–EXIO7 (driver
+pin numbers 0–7) plus four output pins OC0–OC3 (driver pin numbers 8–11). Its I2C interface is
+unusual: the chip has **no single slave address** — it uses its function registers *as* addresses
+(the vendor's IDF header documents 0x23, 0x24, 0x26 and 0x38; the Espressif driver hardcodes those
+and ignores the address you pass it — the `0x20` in `esp_panel_board_custom_conf.h:351` is a
+placeholder, never put on the wire). Expect an `i2cdetect` scan to show the expander answering at
+several addresses in the 0x23–0x38 range, not one line at 0x20.
 
-| Pin | Function | Status |
+The vendor driver calls `enableAllIO_Output()` at init (`esp_panel_board_custom_conf.h:369`), so
+every EXIO pin defaults to output. The pin map below is stated by the vendor's own IDF header
+(`ESP-IDF/05_IO_Test/lib/CH422G/CH422G.h`) and matches the wiki's pinout tables and the schematic:
+
+| Pin (driver #) | Function | Status |
 | --- | --- | --- |
-| 0 | — | **UNVERIFIED** — vendor driver does not claim it; `05_IO_Test` drives it as a loopback demo, which suggests it is reachable |
-| 1 | Touch panel reset | Claimed |
-| 2 | LCD backlight | Claimed |
-| 3 | LCD reset | Claimed |
-| 4 | SD card chip select | Claimed |
-| 5 | USB port select | Claimed |
-| 6 | — | **UNVERIFIED** |
-| 7 | — | **UNVERIFIED** |
+| EXIO0 (0) | Isolated digital input **DI0** | Claimed — not spare |
+| EXIO1 (1) | Touch panel reset | Claimed |
+| EXIO2 (2) | LCD backlight | Claimed |
+| EXIO3 (3) | LCD reset | Claimed |
+| EXIO4 (4) | SD card chip select | Claimed |
+| EXIO5 (5) | Isolated digital input **DI1** — and, as `USB_SEL`, the line the Arduino demos drive to steer the FSUSB42 USB switch | Claimed under both names — see *Verify first* |
+| EXIO6 (6) | — | Unused per the vendor's IDF header (unlabelled there) |
+| EXIO7 (7) | — | Unused per the vendor's IDF header |
+| OC0 (8) | Isolated digital output **DO0** (open-drain capable) | Claimed |
+| OC1 (9) | Isolated digital output **DO1** | Claimed |
+| OC2–OC3 (10–11) | — | Unused |
 
-Even if 0, 6, and 7 are spare, the expander is the wrong place for the relay
+The vendor package itself uses two names for pin 5: the IDF header and the wiki call it DI1 (an
+isolated input), while the Arduino SD demo calls the same pin `USB_SEL` and drives it low with a
+comment saying high "enables FSUSB42UMX … and don't use USB Function". Both descriptions point at
+the same net — it steers the USB switch and is read as the isolated input. Bench-verify which
+state your firmware leaves it in before relying on either behaviour.
+
+Even with EXIO6, EXIO7, and OC2–OC3 spare, the expander is the wrong place for the relay
 ([01-architecture.md](01-architecture.md#design-rules) rule 5): an I2C hang would leave you unable to
 de-energise the relay, and the off path must be as short as possible.
 
@@ -115,7 +141,7 @@ Every GPIO on the ESP32-S3, accounted for. This is the table that justifies the 
 | 1 | LCD DATA11 | 26 | internal SPI flash |
 | 2 | LCD DATA12 | 27 | internal SPI flash |
 | 3 | LCD VSYNC *(also a strapping pin)* | 28 | internal SPI flash |
-| 4 | Input in the IDF demo — **UNVERIFIED as onboard wiring** | 29 | internal SPI flash |
+| 4 | GT911 touch IRQ (`TP_IRQ`) — verified, wiki + schematic | 29 | internal SPI flash |
 | 5 | LCD DE | 30 | internal SPI flash |
 | 6 | RTC alarm interrupt | 31 | internal SPI flash |
 | 7 | LCD PCLK | 32 | internal SPI flash |
@@ -141,11 +167,10 @@ Every GPIO on the ESP32-S3, accounted for. This is the table that justifies the 
 RS485 (43, 44) / CAN (15, 16). None of those is worth it when a second ESP32 costs less than the
 cable you would run to the tank.
 
-One caveat on that conclusion: it rests on GPIO 4 being consumed. The vendor's IDF example configures
-it as an input, but that may be a demo convenience rather than a wire on the board. If GPIO 4 turns out
-to be genuinely free, you have exactly **one** spare GPIO — which changes the arithmetic but not the
-decision, because one pin is not enough margin and rule 5's noise argument still stands on its own.
-Settle it in the *Verify first* checklist below.
+This conclusion no longer rests on a caveat. GPIO 4 was previously listed as "input in the IDF
+demo, possibly unwired" — that question is settled: the wiki pinout and the schematic both wire it
+to the GT911's touch-interrupt line (`TP_IRQ`). Every GPIO is consumed, and rule 5's noise argument
+stands on its own regardless.
 
 ## Feeder node — pin plan
 
@@ -275,24 +300,31 @@ and one that might overfeed, choose the one that misses. That preference is bake
 
 ## Verify first — before you wire anything
 
-Work through this on your physical boards. Each item is a place where the vendor package left
-ambiguity.
+Work through this on your physical boards. Items the wiki and schematic now answer are marked
+**settled** — the check becomes confirmation rather than investigation.
 
-- [ ] **Panel controller** — ST7262 or ST7701? Flash `08_DrawColorBar` (step 0 of
-      [08-testing-and-bringup.md](08-testing-and-bringup.md)) and see which one produces a correct
-      image. Do not assume from the doc.
-- [ ] **Panel resolution** — 800 × 480 or 1024 × 600? The vendor configs ship both. Look at the
-      silkscreen and check `ESP_PANEL_USE_1024_600_LCD`. Getting this wrong gives a shifted or
-      split image rather than an obvious failure.
+- [ ] **Panel controller** — **settled as ST7262** by the wiki (datasheet list) and every Arduino demo
+      config; the IDF README's ST7701 is stale upstream boilerplate. Still flash `08_DrawColorBar`
+      (step 0 of [08-testing-and-bringup.md](08-testing-and-bringup.md)) and confirm your unit draws a
+      correct image — that is cheap insurance against a board revision.
+- [ ] **Panel resolution** — **settled as 800 × 480** by the wiki's spec table; the demo code ships a
+      1024 × 600 configuration only because Waveshare shares one codebase across boards. Confirm with
+      the colour-bar test anyway: a wrong resolution gives a shifted or split image rather than an
+      obvious failure.
 - [ ] **Is there an expansion header at all?** If yes, photograph the silkscreen and record the pinout
       here. The package never documents one.
-- [ ] **Expander pins 0, 6, 7** — are they physically routed anywhere? Run `05_IO_Test`, which drives
-      pin 0, and probe with a meter. If they go nowhere, the HMI genuinely has no usable spare I/O.
-- [ ] **GPIO 4** — is anything actually wired to it, or was it just a convenient pin in the vendor's
-      example? Probe it, and check the silkscreen for a KEY marking. This decides between "zero free
-      GPIO" and "exactly one".
-- [ ] **USB_SEL** (expander pin 5) — which position selects which of the board's two USB ports? Get
-      this wrong and flashing appears completely dead, which is easy to misread as a broken board.
+- [ ] **Expander pin map** — settled against the vendor's IDF header (`05_IO_Test/lib/CH422G/CH422G.h`):
+      pin 0 = DI0, pin 5 = DI1/`USB_SEL`, OC0/OC1 = DO0/DO1; EXIO6/7 and OC2/3 are unlabelled. Confirm
+      with `05_IO_Test` (it loopbacks DO0→DI0 and DO1→DI1 through external jumper wires and turns the
+      screen green on success) and note that pin 0 is an input, not something the test drives.
+- [ ] **GPIO 4 (touch IRQ)** — **settled: wired to the GT911's `TP_IRQ`** (wiki pinout, schematic
+      `IO4 ↔ CTP_IRQ`). Remaining check is functional: confirm the line toggles when the panel is
+      touched, which is how the HMI will eventually get its touch events without polling.
+- [ ] **USB_SEL** (expander pin 5) — the board has **one** USB-C port; this line steers the FSUSB42
+      switch between the ESP32-S3 native USB (GPIO 19/20) and the onboard CH343 UART bridge. Confirm
+      which COM port each state produces in Device Manager, and what the state is at raw power-up before
+      any firmware configures the expander — that decides whether a factory-fresh board flashes over
+      USB-Serial-JTAG or over the CH343.
 - [ ] **Feeder node chip** — confirm it is a classic ESP32 (target `esp32`), not an S3 or C3. The
       pin plan above is for classic ESP32 and does not transfer.
 - [ ] **Relay trigger** — measure the IN pin threshold, and confirm active-high or active-low, before

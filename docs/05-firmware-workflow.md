@@ -265,9 +265,11 @@ Requirements either way:
 * **Flash size mismatch** → boot loop. Set `CONFIG_ESPTOOLPY_FLASHSIZE_*` to your actual module.
 * **Erase NVS when the layout changes:** `idf.py -p COM<n> erase-flash`. A stale NVS with an old struct
   layout is a common source of "it boots into a weird state" after a schema change.
-* **HMI appears dead** → the `USB_SEL` expander pin. See
-  [03-toolchain-setup.md](03-toolchain-setup.md#5-board-ports-and-the-two-port-gotcha).
-* **Monitor shows nothing on the HMI** → it logs over USB-Serial-JTAG, not UART0. Make sure you are on
-  the right port.
+* **HMI appears dead** → the `USB_SEL` expander pin may have routed the board's single USB-C port to
+  the CH343 bridge instead of the native USB. See
+  [03-toolchain-setup.md](03-toolchain-setup.md#5-the-single-usb-c-port-and-the-usb_sel-switch).
+* **Monitor shows nothing on the HMI** → it logs over USB-Serial-JTAG, not UART0 — unless the port
+  is routed to the CH343, in which case UART0 is the console. Make sure you are on the right port
+  *and* that the console config matches the routing.
 
 Next: [06-ui-design-workflow.md](06-ui-design-workflow.md).

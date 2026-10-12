@@ -21,7 +21,7 @@ The S3 board's GPIO budget is fully spent on its own display and peripherals:
 | RS485 | 2 |
 | CAN | 2 |
 | RTC alarm interrupt | 1 |
-| Onboard button | 1 |
+| Touch panel IRQ (GT911 INT) | 1 |
 
 Everything else hangs off a CH422G I2C expander whose spare pins are not brought out to a documented
 header. The second ESP32 has free GPIO to spare, sits next to the motor where the wiring is short,

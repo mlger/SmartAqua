@@ -16,9 +16,12 @@ changed.
 
 **Context.** The ESP32-S3-Touch-LCD-4.3B board has no free GPIO. Verified from the vendor package: 20
 pins for the 16-bit RGB LCD, 3 for SD, 2 for I2C, 2 for RS485, 2 for CAN, GPIO 6 for the RTC alarm
-interrupt, GPIO 4 for an onboard button, GPIO 19/20 for USB. GPIO 26–32 are internal flash, 33–37 are
-consumed by octal PSRAM, and 22–25 do not exist on the ESP32-S3. The only spare user I/O is behind a
-CH422G I2C expander, whose unused pins (0, 6, 7) are not documented as reaching any header.
+interrupt, GPIO 4 for the GT911 touch IRQ (corrected 2026-10-12 — this line previously said "an
+onboard button"; the wiki pinout and schematic wire GPIO 4 to the touch controller's `TP_IRQ` line,
+which strengthens, not weakens, the conclusion), GPIO 19/20 for USB. GPIO 26–32 are internal
+flash, 33–37 are consumed by octal PSRAM, and 22–25 do not exist on the ESP32-S3. The only spare
+user I/O is behind a CH422G I2C expander, whose unused pins (EXIO6, EXIO7, OC2, OC3) are not
+documented as reaching any header.
 
 **Decision.** Drive the relay from a second, classic ESP32 devkit placed next to the motor. The S3
 board is the HMI only.

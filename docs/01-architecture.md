@@ -88,32 +88,35 @@ assumed.
 | RS485 | 2 | 43 (RX), 44 (TX) |
 | CAN / TWAI | 2 | 15 (TX), 16 (RX) |
 | RTC alarm interrupt | 1 | 6 |
-| Onboard button (IDF demo) | 1 | 4 |
+| Touch panel IRQ (GT911 `TP_IRQ`) | 1 | 4 |
 | USB D− / D+ | 2 | 19, 20 |
 
 Add the reserves you cannot touch: GPIO 26–32 are internal SPI flash, GPIO 33–37 are consumed by the
-octal PSRAM on this module, and GPIO 22–25 do not exist on the ESP32-S3 at all. There is no free
-GPIO — with one caveat, that GPIO 4 is counted here because the vendor's IDF example configures it as
-an input. If it turns out nothing is wired to it, you have exactly one spare pin. That changes the
-arithmetic without changing the decision: one pin is not margin, and rule 5 stands on its own.
+octal PSRAM on this module, and GPIO 22–25 do not exist on the ESP32-S3 at all. **There is no free
+GPIO.** GPIO 4 is in the budget above because it is wired to the GT911's touch-interrupt line — the
+wiki pinout and the schematic agree on this, and it settles what this table used to list as an open
+question. Nothing is left to reclaim.
 
-The remaining I/O is behind a **CH422G I2C expander at address 0x20**, and the vendor driver already
-claims five of its eight pins:
+The remaining I/O sits behind a **CH422G I2C expander** — a 12-I/O part (EXIO0–7 quasi-bidirectional
+plus OC0–3 outputs) with register-as-address I2C, so it ACKs at several command addresses rather
+than one slave address. The vendor's own IDF header labels every pin:
 
 | Expander pin | Function |
 | --- | --- |
-| 0 | unused by the vendor driver — see *Verify first* |
-| 1 | Touch panel reset |
-| 2 | LCD backlight |
-| 3 | LCD reset |
-| 4 | SD card chip select |
-| 5 | USB port select |
-| 6, 7 | unused by the vendor driver — see *Verify first* |
+| EXIO0 | isolated digital input DI0 |
+| EXIO1 | Touch panel reset |
+| EXIO2 | LCD backlight |
+| EXIO3 | LCD reset |
+| EXIO4 | SD card chip select |
+| EXIO5 | isolated digital input DI1 — also the `USB_SEL` line that steers the board's USB switch |
+| EXIO6, EXIO7 | unused |
+| OC0, OC1 | isolated digital outputs DO0, DO1 |
+| OC2, OC3 | unused |
 
-Even if pins 0, 6, and 7 turn out to be spare and reachable, driving a relay from an I2C expander is
-a worse idea than driving it from a GPIO: an I2C bus hang leaves you unable to de-energise the relay,
-and rule 2 wants the off path to be as short as possible. The expander is the wrong place for a
-circuit that must fail safe.
+Even the genuinely unused pins (EXIO6, EXIO7, OC2, OC3) do not change the conclusion: driving a
+relay from an I2C expander is a worse idea than driving it from a GPIO, because an I2C bus hang
+leaves you unable to de-energise the relay, and rule 2 wants the off path to be as short as
+possible. The expander is the wrong place for a circuit that must fail safe.
 
 ## Component responsibilities
 

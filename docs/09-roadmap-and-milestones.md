@@ -52,9 +52,10 @@ with a firmware bug.
 
 **Acceptance criteria**
 
-- [ ] Panel resolution settled (800 × 480 or 1024 × 600) and recorded in
+- [ ] Panel resolution settled (expected 800 × 480 per the wiki — confirm on hardware) and recorded in
       [02-hardware-and-wiring.md](02-hardware-and-wiring.md), with the config value that matches
-- [ ] Panel controller identified (ST7262 or ST7701) and recorded
+- [ ] Panel controller identified (expected ST7262 per the wiki and the Arduino configs — confirm on
+      hardware) and recorded
 - [ ] A full-screen LVGL screen renders with no tear and no drift over 10 minutes
 - [ ] A touch anywhere on the screen reports coordinates that match where you pressed, within a few pixels
 - [ ] The RTC reads a correct time, and still does after a power cycle
@@ -65,8 +66,9 @@ with a firmware bug.
 
 **Blocks:** M4 (you cannot lay out a UI without knowing the panel size).
 
-**Risks:** the two vendor pin-data ambiguities — panel controller and resolution. Both are resolved in
-step 0 of the bring-up doc, in ten minutes, with the prebuilt binaries. Do that before writing code.
+**Risks:** the panel facts are now settled from the wiki (800 × 480, ST7262), and the colour-bar test
+in step 0 of the bring-up doc confirms them on your unit in ten minutes with the prebuilt binaries.
+Do that before writing code.
 
 ---
 

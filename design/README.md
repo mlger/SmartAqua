@@ -29,10 +29,12 @@ Home            FeedNow         Schedule        ScheduleEditor
 History         Settings        Diagnostics
 ```
 
-The panel size for those frames — 800 × 480 or 1024 × 600 — must be settled first. Run bring-up step 0
-in [../docs/08-testing-and-bringup.md](../docs/08-testing-and-bringup.md#step-0--prove-the-hardware-with-vendor-firmware)
-before drawing anything. The panel size is a hardware fact, not a design choice, and a frame drawn at
-the wrong size causes every screen to be subtly wrong.
+The panel size for those frames is **800 × 480** — settled by the wiki's spec table for this product.
+The colour-bar test in step 0 of
+[../docs/08-testing-and-bringup.md](../docs/08-testing-and-bringup.md#step-0--prove-the-hardware-with-vendor-firmware)
+remains the final word on your specific unit before anyone draws in the frames. The panel size is a
+hardware fact, not a design choice, and a frame drawn at the wrong size causes every screen to be
+subtly wrong.
 
 ## What lives where, and why
 

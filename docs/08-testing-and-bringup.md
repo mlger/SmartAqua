@@ -28,28 +28,35 @@ images flashed at offset `0x0`** — that is the Waveshare convention, and it is
 a bin does not boot, try `0x10000` (the app-partition offset for a standard IDF layout) before
 concluding anything is broken.
 
+Note the `--flash_mode dio` in that command is the vendor's conservative flashing default; it patches
+the merged image's header to DIO, which always boots. Your own builds configure QIO through
+`sdkconfig.defaults` — do not "fix" that to match the flashing command, or the other way round.
+
 | File | Proves |
 | --- | --- |
 | `01_I2C_Test.bin` | The I2C bus and the devices on it |
 | `02_RS485_Test.bin` | RS485 transceiver |
 | `03_SD_Test.bin` | SD card slot |
 | `04_RTC_Test.bin` | PCF85063A RTC |
-| `05_IO_Test.bin` | The CH422G expander (drives expander pin 0 as a loopback; expects a jumper) |
+| `05_IO_Test.bin` | The CH422G expander — drives DO0/DO1, reads them back on DI0/DI1 through **external jumper wires you fit on the terminals**; screen turns green when the loopback reads back correctly |
 | `06_TWAItransmit.bin`, `07_TWAIreceive.bin` | CAN, needs two boards |
-| `08_DrawColorBar_800x480.bin`, `..._1024x600.bin` | **Which panel and resolution your board actually has** |
+| `08_DrawColorBar_800x480.bin`, `..._1024x600.bin` | **Which panel resolution your board actually has** — the wiki says this product is 800 × 480, so the 1024 × 600 bin exists only because the demo codebase is shared across Waveshare boards |
 | `09_lvgl_Porting_800x480.bin`, `..._1024x600.bin` | Panel **and** GT911 touch together |
 
 ### Settle the panel question now
 
 Flash the two `08_DrawColorBar` variants. Exactly one will draw a correct, stable, full-screen colour
-bar. The wrong one gives a split or shifted image, or nothing.
+bar. The wrong one gives a split or shifted image, or nothing. Expect the 800 × 480 bin to be the
+correct one — the wiki's spec table says that is this product's panel — but run both anyway: this
+test costs two minutes and settles the fact on *your* unit rather than on a wiki page.
 
 Record the answer in [02-hardware-and-wiring.md](02-hardware-and-wiring.md#verify-first--before-you-wire-anything)
 and in `apps/hmi/sdkconfig.defaults`. Everything downstream — the Figma frame size, the LVGL buffers,
 the tab-bar height — depends on this number, and guessing it wrong means redoing the UI.
 
-While you are here, also run `05_IO_Test` with a meter on expander pin 0 and settle whether any
-expander pin is physically routed anywhere.
+While you are here, also run `05_IO_Test`: it loopbacks the isolated outputs DO0/DO1 to the inputs
+DI0/DI1 through jumper wires you fit on the terminals, and turns the screen green when the readback
+matches — which proves the CH422G expander and its pin map.
 
 ## Step 1 — I2C enumeration
 
@@ -65,11 +72,11 @@ Expected devices:
 
 | Address | Device |
 | --- | --- |
-| `0x20` | CH422G IO expander |
+| several of `0x23`, `0x24`, `0x26`, `0x38` | CH422G IO expander — it is a **register-as-address** device with no single slave address, so it answers at its command addresses (0x20 is *not* one of them) |
 | `0x51` | PCF85063A RTC |
 | `0x5D` or `0x14` | GT911 touch (address depends on its reset sequence — both are valid) |
 
-If you see `0x20` and `0x51` but nothing for the touch, that is normal **when the touch is not
+If you see entries in the 0x23–0x38 range plus `0x51` but nothing for the touch, that is normal **when the touch is not
 initialised** — the GT911 only appears after its reset line has been pulsed by the expander. The
 `09_lvgl_Porting` firmware is the real touch test.
 
@@ -291,7 +298,7 @@ CI cannot test hardware, so this is a human step and it is not optional.
 
 | Symptom | Look here first |
 | --- | --- |
-| No COM port on the HMI | The other USB-C port; `USB_SEL` expander pin 5 |
+| No COM port on the HMI | `USB_SEL` routing (native USB vs CH343), a missing WCH CH343 driver, or download mode — see [03](03-toolchain-setup.md#5-the-single-usb-c-port-and-the-usb_sel-switch) |
 | Board appears dead | Is it in download mode? Hold BOOT, tap RST, release BOOT |
 | Split or shifted image | Wrong resolution in config; re-run step 0 |
 | Image correct, screen dark | Backlight, expander pin 2 |
