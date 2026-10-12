@@ -8,33 +8,33 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "saq_portion.h"
 #include "saq_protocol.h"
 #include "saq_schedule.h"
-#include "saq_portion.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 /* One retained feed-history entry — same fields as the LOG_ENTRY packet,
  * so replay is a mechanical copy. */
 typedef struct {
-    uint32_t log_seq;      /* assigned by the store on append */
-    uint32_t event_epoch;  /* UTC epoch when the feed started; 0 if clock unsynced */
-    uint16_t portion_g;    /* portion as requested (grams) */
-    uint16_t actual_ms;    /* milliseconds the relay actually stayed energised */
-    uint8_t  trigger;      /* SAQ_TRIGGER_* */
-    uint8_t  result;       /* SAQ_FEED_* */
+    uint32_t log_seq;     /* assigned by the store on append */
+    uint32_t event_epoch; /* UTC epoch when the feed started; 0 if clock unsynced */
+    uint16_t portion_g;   /* portion as requested (grams) */
+    uint16_t actual_ms;   /* milliseconds the relay actually stayed energised */
+    uint8_t trigger;      /* SAQ_TRIGGER_* */
+    uint8_t result;       /* SAQ_FEED_* */
 } feeder_log_entry_t;
 
 /* Crash-safety record written BEFORE the relay energises and deleted after
  * (M2 acceptance: "feed_in_progress crash-safety flag; a mid-feed reboot
  * does not re-feed" — instead it logs an interrupted feed). */
 typedef struct {
-    uint8_t  magic;        /* 0xA5 when a record is live */
-    uint8_t  trigger;
+    uint8_t magic; /* 0xA5 when a record is live */
+    uint8_t trigger;
     uint16_t portion_g;
-    uint16_t run_ms;       /* planned duration (already clamped) */
-    uint32_t start_epoch;  /* UTC epoch at start, 0 if unsynced */
-    uint32_t start_ms;     /* millis() at start */
+    uint16_t run_ms;      /* planned duration (already clamped) */
+    uint32_t start_epoch; /* UTC epoch at start, 0 if unsynced */
+    uint32_t start_ms;    /* millis() at start */
 } feeder_inprog_t;
 
 #define FEEDER_INPROG_MAGIC 0xA5u
@@ -73,5 +73,5 @@ uint32_t store_log_last_feed_epoch(void);
 
 /* ---- crash-safety record -------------------------------------------- */
 void store_set_inprog(const feeder_inprog_t *rec);
-bool store_get_inprog(feeder_inprog_t *rec);   /* false when none live */
+bool store_get_inprog(feeder_inprog_t *rec); /* false when none live */
 void store_clear_inprog(void);

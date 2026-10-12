@@ -13,11 +13,11 @@
  */
 
 #include "ui_feednow.h"
-#include "ui_theme.h"
-#include "ui_chrome.h"
 #include "app_model.h"
 #include "saq_link.h"
 #include "saq_portion.h"
+#include "ui_chrome.h"
+#include "ui_theme.h"
 
 #include <Arduino.h>
 #include <stdio.h>
@@ -31,8 +31,8 @@ typedef enum {
 } fn_state_t;
 
 static fn_state_t s_state = FN_IDLE;
-static uint16_t   s_pending_g = 3;
-static uint32_t   s_run_start_ms = 0;
+static uint16_t s_pending_g = 3;
+static uint32_t s_run_start_ms = 0;
 
 static lv_obj_t *s_lbl_portion;
 static lv_obj_t *s_slider;
@@ -44,8 +44,7 @@ static lv_obj_t *s_btn_stop;
 
 /* ------------------------------------------------------------------ */
 
-static void set_state(fn_state_t st)
-{
+static void set_state(fn_state_t st) {
     s_state = st;
 
     const bool idle = (st == FN_IDLE);
@@ -66,10 +65,10 @@ static void set_state(fn_state_t st)
         }
     }
     if (s_lbl_feed_hint != NULL) {
-        lv_label_set_text(s_lbl_feed_hint,
-                          (!g_app.paired) ? "Not paired — pair in Settings" :
-                          (!g_app.link_up) ? "Feeder offline" :
-                          (st == FN_SENDING) ? "Sending…" : "");
+        lv_label_set_text(s_lbl_feed_hint, (!g_app.paired)      ? "Not paired — pair in Settings"
+                                           : (!g_app.link_up)   ? "Feeder offline"
+                                           : (st == FN_SENDING) ? "Sending…"
+                                                                : "");
     }
     if ((s_spinner != NULL) && (s_lbl_elapsed != NULL) && (s_btn_stop != NULL)) {
         if (running) {
@@ -92,18 +91,15 @@ static void set_state(fn_state_t st)
     ui_tabbar_enable(!running);
 }
 
-static void portion_label_refresh(void)
-{
+static void portion_label_refresh(void) {
     const int32_t v = lv_slider_get_value(s_slider);
-    s_pending_g = (uint16_t)v;      /* grams x 2, kept for the record */
+    s_pending_g = (uint16_t)v; /* grams x 2, kept for the record */
     char buf[24];
-    snprintf(buf, sizeof(buf), "Portion: %u.%u g",
-             (unsigned)(v / 2), (unsigned)((v % 2) * 5));
+    snprintf(buf, sizeof(buf), "Portion: %u.%u g", (unsigned)(v / 2), (unsigned)((v % 2) * 5));
     lv_label_set_text(s_lbl_portion, buf);
 }
 
-static uint16_t pending_portion_g(void)
-{
+static uint16_t pending_portion_g(void) {
     const int32_t v = lv_slider_get_value(s_slider);
     return (uint16_t)(v / 2);
 }
@@ -112,8 +108,7 @@ static uint16_t pending_portion_g(void)
 /* Confirmation -> send                                                */
 /* ------------------------------------------------------------------ */
 
-static void on_confirm_yes(bool yes, void *user)
-{
+static void on_confirm_yes(bool yes, void *user) {
     (void)user;
     if (!yes) {
         return;
@@ -129,20 +124,17 @@ static void on_confirm_yes(bool yes, void *user)
     set_state(FN_SENDING);
 }
 
-static void on_feed_btn(lv_event_t *e)
-{
+static void on_feed_btn(lv_event_t *e) {
     (void)e;
     if (s_state != FN_IDLE) {
         return;
     }
     char body[64];
-    snprintf(body, sizeof(body), "Feed %u g now?",
-             (unsigned)pending_portion_g());
+    snprintf(body, sizeof(body), "Feed %u g now?", (unsigned)pending_portion_g());
     ui_confirm("Feed now", body, "Feed", "Cancel", false, on_confirm_yes, NULL);
 }
 
-static void on_stop_btn(lv_event_t *e)
-{
+static void on_stop_btn(lv_event_t *e) {
     (void)e;
     if (s_state == FN_RUNNING) {
         (void)link_send_stop();
@@ -154,17 +146,15 @@ static void on_stop_btn(lv_event_t *e)
 /* Elapsed timer — the real count, not just a spinner                  */
 /* ------------------------------------------------------------------ */
 
-static void on_run_timer(lv_timer_t *t)
-{
+static void on_run_timer(lv_timer_t *t) {
     (void)t;
     if ((s_state != FN_RUNNING) && (s_state != FN_STOPPING)) {
         return;
     }
     char buf[40];
     const uint32_t ms = millis() - s_run_start_ms;
-    snprintf(buf, sizeof(buf), "%s… %u.%u s",
-             (s_state == FN_STOPPING) ? "Stopping" : "Feeding",
-             (unsigned)(ms / 1000u), (unsigned)((ms % 1000u) / 100u));
+    snprintf(buf, sizeof(buf), "%s… %u.%u s", (s_state == FN_STOPPING) ? "Stopping" : "Feeding", (unsigned)(ms / 1000u),
+             (unsigned)((ms % 1000u) / 100u));
     lv_label_set_text(s_lbl_elapsed, buf);
 }
 
@@ -172,10 +162,9 @@ static void on_run_timer(lv_timer_t *t)
 /* Public events                                                       */
 /* ------------------------------------------------------------------ */
 
-void ui_feednow_on_cmd_ack(bool ok, uint8_t nack_reason)
-{
+void ui_feednow_on_cmd_ack(bool ok, uint8_t nack_reason) {
     if (s_state != FN_SENDING) {
-        return;                          /* not ours (time/config commands) */
+        return; /* not ours (time/config commands) */
     }
     if (ok) {
         s_run_start_ms = millis();
@@ -184,19 +173,26 @@ void ui_feednow_on_cmd_ack(bool ok, uint8_t nack_reason)
     }
     const char *why = "Feeder refused";
     switch (nack_reason) {
-    case SAQ_RES_REJECTED_DURATION: why = "Duration refused"; break;
-    case SAQ_RES_BUSY:              why = "Feeder busy — try later"; break;
-    case SAQ_RES_BAD_PAYLOAD:       why = "Feeder refused (bad request)"; break;
-    case SAQ_RES_NOT_PAIRED:        why = "Not paired"; break;
-    default: break;
+    case SAQ_RES_REJECTED_DURATION:
+        why = "Duration refused";
+        break;
+    case SAQ_RES_BUSY:
+        why = "Feeder busy — try later";
+        break;
+    case SAQ_RES_BAD_PAYLOAD:
+        why = "Feeder refused (bad request)";
+        break;
+    case SAQ_RES_NOT_PAIRED:
+        why = "Not paired";
+        break;
+    default:
+        break;
     }
     ui_toast(why, UI_TOAST_DANGER);
-    set_state(FN_IDLE);                  /* no feed claimed */
+    set_state(FN_IDLE); /* no feed claimed */
 }
 
-void ui_feednow_on_feed_done(uint16_t portion_g, uint16_t actual_ms,
-                             uint8_t trigger, uint8_t result)
-{
+void ui_feednow_on_feed_done(uint16_t portion_g, uint16_t actual_ms, uint8_t trigger, uint8_t result) {
     (void)trigger;
     if ((s_state != FN_RUNNING) && (s_state != FN_STOPPING)) {
         /* An unattended outcome (scheduled feed while the screen was
@@ -216,8 +212,7 @@ void ui_feednow_on_feed_done(uint16_t portion_g, uint16_t actual_ms,
         ui_toast(buf, UI_TOAST_OK);
         break;
     case SAQ_FEED_CLAMPED:
-        snprintf(buf, sizeof(buf), "Limited to %u s",
-                 (unsigned)((actual_ms + 999u) / 1000u));
+        snprintf(buf, sizeof(buf), "Limited to %u s", (unsigned)((actual_ms + 999u) / 1000u));
         ui_toast(buf, UI_TOAST_WARN);
         break;
     case SAQ_FEED_STOPPED:
@@ -228,14 +223,13 @@ void ui_feednow_on_feed_done(uint16_t portion_g, uint16_t actual_ms,
         break;
     }
     set_state(FN_IDLE);
-    ui_nav_tab(UI_TAB_HOME);             /* pop back to Home (screens.md) */
+    ui_nav_tab(UI_TAB_HOME); /* pop back to Home (screens.md) */
 }
 
-void ui_feednow_on_link(bool up)
-{
+void ui_feednow_on_link(bool up) {
     (void)up;
     if (s_state == FN_IDLE) {
-        set_state(FN_IDLE);              /* re-runs the hint text */
+        set_state(FN_IDLE); /* re-runs the hint text */
     }
 }
 
@@ -243,8 +237,7 @@ void ui_feednow_on_link(bool up)
 /* Build                                                               */
 /* ------------------------------------------------------------------ */
 
-void ui_feednow_create(lv_obj_t *parent)
-{
+void ui_feednow_create(lv_obj_t *parent) {
     s_lbl_portion = ui_make_label(parent, SAQ_FONT_HEADING, SAQ_C_TEXT);
     lv_obj_align(s_lbl_portion, LV_ALIGN_TOP_MID, 0, SAQ_SP_XL);
     lv_label_set_text(s_lbl_portion, "Portion: 3 g");
@@ -252,20 +245,22 @@ void ui_feednow_create(lv_obj_t *parent)
     s_slider = lv_slider_create(parent);
     lv_obj_set_width(s_slider, 560);
     lv_obj_align(s_slider, LV_ALIGN_TOP_MID, 0, SAQ_SP_XL + SAQ_SP_XL);
-    lv_slider_set_range(s_slider, 2, 20);          /* grams x 2 */
+    lv_slider_set_range(s_slider, 2, 20); /* grams x 2 */
     lv_slider_set_value(s_slider, (int16_t)(g_app.default_portion_g * 2), LV_ANIM_OFF);
     lv_obj_set_style_bg_color(s_slider, SAQ_C_BG, LV_PART_MAIN);
     lv_obj_set_style_bg_color(s_slider, SAQ_C_PRIMARY, LV_PART_INDICATOR);
     lv_obj_set_style_bg_color(s_slider, SAQ_C_TEXT, LV_PART_KNOB);
-    lv_obj_add_event_cb(s_slider, [](lv_event_t *e) {
-        lv_obj_t *sl = lv_event_get_target(e);
-        const int32_t v = lv_slider_get_value(sl);
-        char buf[24];
-        snprintf(buf, sizeof(buf), "Portion: %u.%u g",
-                 (unsigned)(v / 2), (unsigned)((v % 2) * 5));
-        lv_label_set_text(s_lbl_portion, buf);
-        s_pending_g = (uint16_t)v;
-    }, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(
+        s_slider,
+        [](lv_event_t *e) {
+            lv_obj_t *sl = lv_event_get_target(e);
+            const int32_t v = lv_slider_get_value(sl);
+            char buf[24];
+            snprintf(buf, sizeof(buf), "Portion: %u.%u g", (unsigned)(v / 2), (unsigned)((v % 2) * 5));
+            lv_label_set_text(s_lbl_portion, buf);
+            s_pending_g = (uint16_t)v;
+        },
+        LV_EVENT_VALUE_CHANGED, NULL);
 
     /* 1 g / 5 g / 10 g scale marks (screens.md layout) */
     lv_obj_t *m1 = ui_make_label(parent, SAQ_FONT_CAPTION, SAQ_C_TEXT_MUTED);

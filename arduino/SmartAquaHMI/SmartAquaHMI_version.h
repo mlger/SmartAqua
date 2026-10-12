@@ -5,5 +5,5 @@
 
 #pragma once
 
-#define HMI_FW_MAJOR   1
-#define HMI_FW_MINOR   1
+#define HMI_FW_MAJOR 1
+#define HMI_FW_MINOR 1

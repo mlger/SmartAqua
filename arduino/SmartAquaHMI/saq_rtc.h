@@ -15,9 +15,9 @@
 
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /* Probe the chip. Returns false (and logs) if it does not answer — a
  * missing backup battery or an empty socket is not fatal: the HMI keeps

@@ -3,8 +3,8 @@
  */
 
 #include "ui_chrome.h"
-#include "ui_theme.h"
 #include "app_model.h"
+#include "ui_theme.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -24,11 +24,11 @@ static lv_obj_t *s_content;
 static lv_obj_t *s_tab_bar;
 static lv_obj_t *s_tab_btns[4];
 static lv_obj_t *s_tab_conts[4];
-static int        s_active_tab = UI_TAB_HOME;
+static int s_active_tab = UI_TAB_HOME;
 
 static lv_obj_t *s_current_overlay = NULL;
 static lv_obj_t *s_overlay_clocks[4];
-static int       s_overlay_clock_n = 0;
+static int s_overlay_clock_n = 0;
 
 static const char *TAB_NAMES[4] = {"Home", "Feed", "Schedule", "Settings"};
 
@@ -43,21 +43,19 @@ void ui_schedule_create(lv_obj_t *parent);
 void ui_schedule_refresh(void);
 void ui_settings_create(lv_obj_t *parent);
 void ui_settings_refresh(void);
-void ui_history_create(void);      /* overlay */
-void ui_diagnostics_create(void);  /* overlay */
+void ui_history_create(void);     /* overlay */
+void ui_diagnostics_create(void); /* overlay */
 
 /* ------------------------------------------------------------------ */
 /* Tab navigation                                                      */
 /* ------------------------------------------------------------------ */
 
-static void on_tab_btn(lv_event_t *e)
-{
+static void on_tab_btn(lv_event_t *e) {
     const int idx = (int)(intptr_t)lv_event_get_user_data(e);
     ui_nav_tab(idx);
 }
 
-void ui_nav_tab(int idx)
-{
+void ui_nav_tab(int idx) {
     if ((idx < 0) || (idx > 3)) {
         return;
     }
@@ -71,13 +69,11 @@ void ui_nav_tab(int idx)
     lv_label_set_text(s_lbl_title, TAB_NAMES[idx]);
 }
 
-lv_obj_t *ui_tab_container(int idx)
-{
+lv_obj_t *ui_tab_container(int idx) {
     return s_tab_conts[idx];
 }
 
-void ui_tabbar_enable(bool enable)
-{
+void ui_tabbar_enable(bool enable) {
     for (int i = 0; i < 4; i++) {
         if (enable) {
             lv_obj_clear_state(s_tab_btns[i], LV_STATE_DISABLED);
@@ -91,8 +87,7 @@ void ui_tabbar_enable(bool enable)
 /* Status bar refresh (1 s)                                            */
 /* ------------------------------------------------------------------ */
 
-static void refresh_link_indicator(void)
-{
+static void refresh_link_indicator(void) {
     lv_color_t dot = SAQ_C_TEXT_MUTED;
     const char *text = "Not paired";
     if (g_app.paired && g_app.link_up) {
@@ -109,14 +104,12 @@ static void refresh_link_indicator(void)
     lv_label_set_text(s_lbl_link, text);
 }
 
-static void refresh_clock(void)
-{
+static void refresh_clock(void) {
     char buf[16];
     if (g_app.clock_ok) {
         const uint32_t loc = model_local_epoch();
         const uint32_t sod = loc % 86400u;
-        snprintf(buf, sizeof(buf), "%02u:%02u",
-                 (unsigned)(sod / 3600u), (unsigned)((sod % 3600u) / 60u));
+        snprintf(buf, sizeof(buf), "%02u:%02u", (unsigned)(sod / 3600u), (unsigned)((sod % 3600u) / 60u));
         lv_obj_set_style_text_color(s_lbl_time, SAQ_C_TEXT_MUTED, LV_PART_MAIN);
         lv_obj_add_flag(s_lbl_clock_conf, LV_OBJ_FLAG_HIDDEN);
     } else {
@@ -135,15 +128,13 @@ static void refresh_clock(void)
     }
 }
 
-static void on_chrome_timer(lv_timer_t *t)
-{
+static void on_chrome_timer(lv_timer_t *t) {
     (void)t;
     refresh_link_indicator();
     refresh_clock();
 }
 
-void ui_chrome_refresh(void)
-{
+void ui_chrome_refresh(void) {
     refresh_link_indicator();
     refresh_clock();
 }
@@ -152,15 +143,13 @@ void ui_chrome_refresh(void)
 /* Toast                                                               */
 /* ------------------------------------------------------------------ */
 
-static void on_toast_expire(lv_timer_t *t)
-{
+static void on_toast_expire(lv_timer_t *t) {
     lv_obj_t *toast = (lv_obj_t *)t->user_data;
     lv_obj_del(toast);
     lv_timer_del(t);
 }
 
-void ui_toast(const char *text, int kind)
-{
+void ui_toast(const char *text, int kind) {
     lv_obj_t *toast = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(toast);
     lv_obj_set_size(toast, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
@@ -171,10 +160,18 @@ void ui_toast(const char *text, int kind)
     lv_obj_set_style_border_width(toast, 0, LV_PART_MAIN);
 
     switch (kind) {
-    case UI_TOAST_OK:      lv_obj_set_style_bg_color(toast, SAQ_C_OK, LV_PART_MAIN); break;
-    case UI_TOAST_WARN:    lv_obj_set_style_bg_color(toast, SAQ_C_WARN, LV_PART_MAIN); break;
-    case UI_TOAST_DANGER:  lv_obj_set_style_bg_color(toast, SAQ_C_DANGER, LV_PART_MAIN); break;
-    default:               lv_obj_set_style_bg_color(toast, SAQ_C_SURFACE_RAISED, LV_PART_MAIN); break;
+    case UI_TOAST_OK:
+        lv_obj_set_style_bg_color(toast, SAQ_C_OK, LV_PART_MAIN);
+        break;
+    case UI_TOAST_WARN:
+        lv_obj_set_style_bg_color(toast, SAQ_C_WARN, LV_PART_MAIN);
+        break;
+    case UI_TOAST_DANGER:
+        lv_obj_set_style_bg_color(toast, SAQ_C_DANGER, LV_PART_MAIN);
+        break;
+    default:
+        lv_obj_set_style_bg_color(toast, SAQ_C_SURFACE_RAISED, LV_PART_MAIN);
+        break;
     }
 
     lv_obj_t *lbl = lv_label_create(toast);
@@ -183,7 +180,7 @@ void ui_toast(const char *text, int kind)
     lv_label_set_text(lbl, text);
 
     lv_obj_align(toast, LV_ALIGN_BOTTOM_MID, 0, -(SAQ_TABBAR_H + SAQ_SP_LG));
-    (void)lv_timer_create(on_toast_expire, 3000, toast);   /* auto-dismiss 3 s */
+    (void)lv_timer_create(on_toast_expire, 3000, toast); /* auto-dismiss 3 s */
 }
 
 /* ------------------------------------------------------------------ */
@@ -197,23 +194,20 @@ typedef struct {
     lv_obj_t *btn_yes;
 } confirm_ctx_t;
 
-static void on_confirm_btn(lv_event_t *e)
-{
+static void on_confirm_btn(lv_event_t *e) {
     confirm_ctx_t *ctx = (confirm_ctx_t *)lv_event_get_user_data(e);
     const bool is_yes = (lv_event_get_target(e) == ctx->btn_yes);
     ui_confirm_cb_t cb = ctx->cb;
     void *user = ctx->user;
-    lv_obj_del(ctx->root);       /* removes scrim, panel, buttons */
+    lv_obj_del(ctx->root); /* removes scrim, panel, buttons */
     lv_mem_free(ctx);
     if (cb != NULL) {
         cb(is_yes, user);
     }
 }
 
-void ui_confirm(const char *title, const char *body,
-                const char *yes_label, const char *no_label,
-                bool yes_is_danger, ui_confirm_cb_t cb, void *user)
-{
+void ui_confirm(const char *title, const char *body, const char *yes_label, const char *no_label, bool yes_is_danger,
+                ui_confirm_cb_t cb, void *user) {
     confirm_ctx_t *ctx = (confirm_ctx_t *)lv_mem_alloc(sizeof(*ctx));
     if (ctx == NULL) {
         return;
@@ -264,8 +258,7 @@ void ui_confirm(const char *title, const char *body,
     lv_obj_t *btn_yes = ui_make_btn(panel, yes_is_danger ? UI_BTN_DANGER : UI_BTN_PRIMARY);
     lv_obj_set_size(btn_yes, 168, SAQ_BTN_H);
     lv_obj_align(btn_yes, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
-    lv_obj_t *l2 = ui_make_label(btn_yes, SAQ_FONT_BODY,
-                                  yes_is_danger ? SAQ_C_TEXT : SAQ_C_ON_PRIMARY);
+    lv_obj_t *l2 = ui_make_label(btn_yes, SAQ_FONT_BODY, yes_is_danger ? SAQ_C_TEXT : SAQ_C_ON_PRIMARY);
     lv_label_set_text(l2, yes_label);
     lv_obj_center(l2);
 
@@ -279,14 +272,12 @@ void ui_confirm(const char *title, const char *body,
 /* Overlays                                                            */
 /* ------------------------------------------------------------------ */
 
-static void on_overlay_back(lv_event_t *e)
-{
+static void on_overlay_back(lv_event_t *e) {
     (void)e;
     ui_hide_overlay();
 }
 
-lv_obj_t *ui_overlay_create(const char *title)
-{
+lv_obj_t *ui_overlay_create(const char *title) {
     lv_obj_t *ov = lv_obj_create(lv_scr_act());
     lv_obj_remove_style_all(ov);
     lv_obj_add_style(ov, &saq_style_screen, LV_PART_MAIN);
@@ -323,8 +314,7 @@ lv_obj_t *ui_overlay_create(const char *title)
     return content;
 }
 
-void ui_overlay_set_title(lv_obj_t *overlay_content, const char *title)
-{
+void ui_overlay_set_title(lv_obj_t *overlay_content, const char *title) {
     if (overlay_content == NULL) {
         return;
     }
@@ -339,8 +329,7 @@ void ui_overlay_set_title(lv_obj_t *overlay_content, const char *title)
     }
 }
 
-void ui_show_overlay(lv_obj_t *ov)
-{
+void ui_show_overlay(lv_obj_t *ov) {
     if (s_current_overlay != NULL) {
         lv_obj_add_flag(s_current_overlay, LV_OBJ_FLAG_HIDDEN);
     }
@@ -351,16 +340,14 @@ void ui_show_overlay(lv_obj_t *ov)
     }
 }
 
-void ui_hide_overlay(void)
-{
+void ui_hide_overlay(void) {
     if (s_current_overlay != NULL) {
         lv_obj_add_flag(s_current_overlay, LV_OBJ_FLAG_HIDDEN);
     }
     s_current_overlay = NULL;
 }
 
-lv_obj_t *ui_current_overlay(void)
-{
+lv_obj_t *ui_current_overlay(void) {
     return s_current_overlay;
 }
 
@@ -368,14 +355,12 @@ lv_obj_t *ui_current_overlay(void)
 /* Build                                                               */
 /* ------------------------------------------------------------------ */
 
-static void on_clock_conf_click(lv_event_t *e)
-{
+static void on_clock_conf_click(lv_event_t *e) {
     (void)e;
     ui_nav_tab(UI_TAB_SETTINGS);
 }
 
-void ui_init(void)
-{
+void ui_init(void) {
     ui_theme_init();
 
     lv_obj_t *scr = lv_scr_act();

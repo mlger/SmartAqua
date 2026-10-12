@@ -14,10 +14,10 @@
 #include <stdbool.h>
 
 /* Tab indices */
-#define UI_TAB_HOME      0
-#define UI_TAB_FEED      1
-#define UI_TAB_SCHED     2
-#define UI_TAB_SETTINGS  3
+#define UI_TAB_HOME     0
+#define UI_TAB_FEED     1
+#define UI_TAB_SCHED    2
+#define UI_TAB_SETTINGS 3
 
 void ui_init(void);
 void ui_nav_tab(int idx);
@@ -30,18 +30,17 @@ lv_obj_t *ui_tab_container(int idx);
 void ui_tabbar_enable(bool enable);
 
 /* Toast kinds */
-#define UI_TOAST_OK      0
-#define UI_TOAST_WARN    1
-#define UI_TOAST_DANGER  2
+#define UI_TOAST_OK     0
+#define UI_TOAST_WARN   1
+#define UI_TOAST_DANGER 2
 
 void ui_toast(const char *text, int kind);
 
 /* Confirmation modal — every feed and every destructive action goes
  * through one of these (screens.md: "no single-tap feed anywhere"). */
 typedef void (*ui_confirm_cb_t)(bool yes, void *user);
-void ui_confirm(const char *title, const char *body,
-                const char *yes_label, const char *no_label,
-                bool yes_is_danger, ui_confirm_cb_t cb, void *user);
+void ui_confirm(const char *title, const char *body, const char *yes_label, const char *no_label, bool yes_is_danger,
+                ui_confirm_cb_t cb, void *user);
 
 /* Overlay factory: full-screen push with a back arrow, covering the chrome.
  * Returns the content container (starts empty, 800x440 below its header). */

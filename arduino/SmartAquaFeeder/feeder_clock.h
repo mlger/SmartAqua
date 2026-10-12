@@ -11,16 +11,16 @@
 
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 void clock_init(void);
-void clock_tick(void);               /* call once a second from loop() */
+void clock_tick(void); /* call once a second from loop() */
 
-bool    clock_synced(void);          /* true once any source has set the time */
-uint32_t clock_epoch(void);          /* UTC epoch seconds; 0 when unsynced */
-uint32_t clock_local_epoch(void);    /* UTC + tz offset — what the schedule runs on */
+bool clock_synced(void);          /* true once any source has set the time */
+uint32_t clock_epoch(void);       /* UTC epoch seconds; 0 when unsynced */
+uint32_t clock_local_epoch(void); /* UTC + tz offset — what the schedule runs on */
 int32_t clock_tz_s(void);
 
 /* Adopt a time push (SET_TIME) or an RTC reading. */

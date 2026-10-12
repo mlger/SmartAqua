@@ -37,8 +37,7 @@
 
 static const char *TAG = "feeder/main";
 
-void app_main(void)
-{
+void app_main(void) {
     esp_chip_info_t chip;
     esp_chip_info(&chip);
 

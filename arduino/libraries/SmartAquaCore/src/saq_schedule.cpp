@@ -4,36 +4,30 @@
 
 #include "saq_schedule.h"
 
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
-uint8_t saq_wday_of(uint32_t local_epoch_s)
-{
+uint8_t saq_wday_of(uint32_t local_epoch_s) {
     return (uint8_t)(((local_epoch_s / 86400u) + SAQ_EPOCH_WDAY_OFFSET) % 7u);
 }
 
-uint8_t saq_hour_of(uint32_t local_epoch_s)
-{
+uint8_t saq_hour_of(uint32_t local_epoch_s) {
     return (uint8_t)((local_epoch_s % 86400u) / 3600u);
 }
 
-uint8_t saq_minute_of(uint32_t local_epoch_s)
-{
+uint8_t saq_minute_of(uint32_t local_epoch_s) {
     return (uint8_t)((local_epoch_s % 3600u) / 60u);
 }
 
-uint32_t saq_epoch_min_of(uint32_t local_epoch_s)
-{
+uint32_t saq_epoch_min_of(uint32_t local_epoch_s) {
     return local_epoch_s / 60u;
 }
 
-uint32_t saq_day_index_of(uint32_t local_epoch_s)
-{
+uint32_t saq_day_index_of(uint32_t local_epoch_s) {
     return local_epoch_s / 86400u;
 }
 
-bool saq_sched_entry_valid(const saq_sched_entry_t *e)
-{
+bool saq_sched_entry_valid(const saq_sched_entry_t *e) {
     if (e == NULL) {
         return false;
     }
@@ -52,9 +46,8 @@ bool saq_sched_entry_valid(const saq_sched_entry_t *e)
     return true;
 }
 
-int saq_sched_find_due(const saq_sched_entry_t *entries, uint8_t count,
-                       const uint32_t *last_fired_min, uint32_t local_epoch_s)
-{
+int saq_sched_find_due(const saq_sched_entry_t *entries, uint8_t count, const uint32_t *last_fired_min,
+                       uint32_t local_epoch_s) {
     if ((entries == NULL) || (last_fired_min == NULL)) {
         return -1;
     }
@@ -75,17 +68,15 @@ int saq_sched_find_due(const saq_sched_entry_t *entries, uint8_t count,
             continue;
         }
         if (last_fired_min[i] == cur_min) {
-            continue;   /* already fired this minute — the double-feed guard */
+            continue; /* already fired this minute — the double-feed guard */
         }
         return (int)i;
     }
     return -1;
 }
 
-bool saq_sched_next_due(const saq_sched_entry_t *entries, uint8_t count,
-                        uint32_t local_epoch_s,
-                        uint32_t *out_epoch_s, uint8_t *out_index)
-{
+bool saq_sched_next_due(const saq_sched_entry_t *entries, uint8_t count, uint32_t local_epoch_s, uint32_t *out_epoch_s,
+                        uint8_t *out_index) {
     if ((entries == NULL) || (count == 0)) {
         return false;
     }
@@ -94,7 +85,7 @@ bool saq_sched_next_due(const saq_sched_entry_t *entries, uint8_t count,
     uint32_t base_min = local_epoch_s / 60u + 1u;
 
     for (uint32_t step = 0; step < 8u * 1440u; step++) {
-        const uint32_t m = base_min + step;                     /* candidate epoch-minute */
+        const uint32_t m = base_min + step; /* candidate epoch-minute */
         const uint32_t secs = m * 60u;
         const uint8_t wday = saq_wday_of(secs);
         const uint8_t hh = (uint8_t)((secs % 86400u) / 3600u);
@@ -121,8 +112,7 @@ bool saq_sched_next_due(const saq_sched_entry_t *entries, uint8_t count,
     return false;
 }
 
-void saq_sched_days_summary(uint8_t days, char *buf, size_t cap)
-{
+void saq_sched_days_summary(uint8_t days, char *buf, size_t cap) {
     if ((buf == NULL) || (cap == 0)) {
         return;
     }
@@ -164,8 +154,7 @@ void saq_sched_days_summary(uint8_t days, char *buf, size_t cap)
     }
 }
 
-void saq_sched_time_str(const saq_sched_entry_t *e, char *buf, size_t cap)
-{
+void saq_sched_time_str(const saq_sched_entry_t *e, char *buf, size_t cap) {
     if ((buf == NULL) || (cap < 6) || (e == NULL)) {
         return;
     }

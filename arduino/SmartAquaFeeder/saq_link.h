@@ -20,20 +20,20 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stdbool.h>
 #include "saq_protocol.h"
 #include "saq_schedule.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
     FEEDER_LINK_EVT_NONE = 0,
-    FEEDER_LINK_EVT_PAIRED,          /* pairing completed */
+    FEEDER_LINK_EVT_PAIRED, /* pairing completed */
     FEEDER_LINK_EVT_PAIR_WINDOW_OPEN,
     FEEDER_LINK_EVT_PAIR_WINDOW_CLOSED,
 } feeder_link_evt_t;
 
-feeder_link_evt_t link_init(void);   /* returns a pending event, if any */
-void link_tick(void);                /* call from loop() every few ms */
+feeder_link_evt_t link_init(void); /* returns a pending event, if any */
+void link_tick(void);              /* call from loop() every few ms */
 
 /* Open the pairing window (60 s, self-closing). */
 void link_open_pair_window(void);
@@ -52,5 +52,5 @@ void link_cfg(uint16_t *ms_per_g, uint16_t *default_portion_g);
 /* Frame counters for the serial console / diagnostics. */
 uint32_t link_rx_frames(void);
 uint32_t link_rx_dups(void);
-uint32_t link_rx_foreign(void);      /* dropped: sender not the peer */
+uint32_t link_rx_foreign(void); /* dropped: sender not the peer */
 uint32_t link_tx_frames(void);

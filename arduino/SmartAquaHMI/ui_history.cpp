@@ -7,10 +7,10 @@
  */
 
 #include "ui_history.h"
-#include "ui_theme.h"
-#include "ui_chrome.h"
 #include "app_model.h"
 #include "saq_schedule.h"
+#include "ui_chrome.h"
+#include "ui_theme.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -20,29 +20,35 @@ static lv_obj_t *s_list;
 static lv_obj_t *s_lbl_empty;
 static lv_obj_t *s_banner_stale;
 
-static const char *trigger_name(uint8_t t)
-{
+static const char *trigger_name(uint8_t t) {
     switch (t) {
-    case SAQ_TRIGGER_SCHEDULED:    return "scheduled";
-    case SAQ_TRIGGER_MANUAL_HMI:   return "manual";
-    case SAQ_TRIGGER_LOCAL_BUTTON: return "button";
-    default:                       return "?";
+    case SAQ_TRIGGER_SCHEDULED:
+        return "scheduled";
+    case SAQ_TRIGGER_MANUAL_HMI:
+        return "manual";
+    case SAQ_TRIGGER_LOCAL_BUTTON:
+        return "button";
+    default:
+        return "?";
     }
 }
 
-static const char *result_name(uint8_t r)
-{
+static const char *result_name(uint8_t r) {
     switch (r) {
-    case SAQ_FEED_COMPLETED:  return "Fed";
-    case SAQ_FEED_CLAMPED:    return "Fed (limited)";
-    case SAQ_FEED_STOPPED:    return "Stopped";
-    case SAQ_FEED_INTERRUPTED: return "Interrupted";
-    default:                  return "?";
+    case SAQ_FEED_COMPLETED:
+        return "Fed";
+    case SAQ_FEED_CLAMPED:
+        return "Fed (limited)";
+    case SAQ_FEED_STOPPED:
+        return "Stopped";
+    case SAQ_FEED_INTERRUPTED:
+        return "Interrupted";
+    default:
+        return "?";
     }
 }
 
-void ui_history_create(void)
-{
+void ui_history_create(void) {
     s_overlay = ui_overlay_create("History");
 
     s_banner_stale = ui_make_card(s_overlay, 800 - 2 * SAQ_SP_LG, 44);
@@ -69,8 +75,7 @@ void ui_history_create(void)
     lv_obj_set_style_pad_top(s_list, SAQ_SP_MD, LV_PART_MAIN);
 }
 
-void ui_history_refresh(void)
-{
+void ui_history_refresh(void) {
     lv_obj_clean(s_list);
 
     if (g_app.hist_count == 0) {
@@ -109,8 +114,7 @@ void ui_history_refresh(void)
 
         char tbuf[10];
         const uint32_t sod = loc % 86400u;
-        snprintf(tbuf, sizeof(tbuf), "%02u:%02u",
-                 (unsigned)(sod / 3600u), (unsigned)((sod % 3600u) / 60u));
+        snprintf(tbuf, sizeof(tbuf), "%02u:%02u", (unsigned)(sod / 3600u), (unsigned)((sod % 3600u) / 60u));
         lv_obj_t *lt = ui_make_label(row, SAQ_FONT_BODY, SAQ_C_TEXT);
         lv_obj_align(lt, LV_ALIGN_LEFT_MID, SAQ_SP_MD, 0);
         lv_label_set_text(lt, tbuf);
@@ -126,14 +130,12 @@ void ui_history_refresh(void)
         lv_label_set_text(lg, trigger_name(h->trigger));
 
         /* completion marker: check for done, warning triangle otherwise */
-        lv_obj_t *mark = ui_make_label(row, SAQ_FONT_BODY,
-                                       (h->result == SAQ_FEED_COMPLETED) ? SAQ_C_OK : SAQ_C_WARN);
+        lv_obj_t *mark = ui_make_label(row, SAQ_FONT_BODY, (h->result == SAQ_FEED_COMPLETED) ? SAQ_C_OK : SAQ_C_WARN);
         lv_obj_align(mark, LV_ALIGN_RIGHT_MID, -SAQ_SP_SM, 0);
         lv_label_set_text(mark, (h->result == SAQ_FEED_COMPLETED) ? LV_SYMBOL_OK : "!");
     }
 }
 
-lv_obj_t *ui_history_get(void)
-{
+lv_obj_t *ui_history_get(void) {
     return s_overlay;
 }

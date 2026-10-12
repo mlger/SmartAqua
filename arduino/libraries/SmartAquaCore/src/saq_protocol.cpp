@@ -5,57 +5,66 @@
 
 #include "saq_protocol.h"
 
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 /* ------------------------------------------------------------------ */
 /* Little-endian helpers — explicit offsets, never struct memcpy        */
 /* ------------------------------------------------------------------ */
 
-static void put_u16(uint8_t *p, uint16_t v)
-{
+static void put_u16(uint8_t *p, uint16_t v) {
     p[0] = (uint8_t)(v & 0xFFu);
     p[1] = (uint8_t)(v >> 8);
 }
 
-static void put_u32(uint8_t *p, uint32_t v)
-{
+static void put_u32(uint8_t *p, uint32_t v) {
     p[0] = (uint8_t)(v & 0xFFu);
     p[1] = (uint8_t)((v >> 8) & 0xFFu);
     p[2] = (uint8_t)((v >> 16) & 0xFFu);
     p[3] = (uint8_t)((v >> 24) & 0xFFu);
 }
 
-static uint16_t get_u16(const uint8_t *p)
-{
+static uint16_t get_u16(const uint8_t *p) {
     return (uint16_t)((uint16_t)p[0] | ((uint16_t)p[1] << 8));
 }
 
-static uint32_t get_u32(const uint8_t *p)
-{
-    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
-           ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+static uint32_t get_u32(const uint8_t *p) {
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 
 /* Required payload length per type. -1 = variable (STATUS), -2 = unknown. */
-static int payload_len_for_type(uint8_t type)
-{
+static int payload_len_for_type(uint8_t type) {
     switch (type) {
-    case SAQ_T_FEED:               return 4;
-    case SAQ_T_STOP:               return 0;
-    case SAQ_T_SET_TIME:           return 8;
-    case SAQ_T_SET_SCHEDULE_ENTRY: return 10;
-    case SAQ_T_STATUS_REQ:         return 4;
-    case SAQ_T_PAIR_REQ:           return 1;
-    case SAQ_T_SET_CONFIG:         return 4;
-    case SAQ_T_ACK:                return 5;
-    case SAQ_T_NACK:               return 5;
-    case SAQ_T_STATUS:             return 19;  /* v1.0 minimum; v1.1 sends 23 */
-    case SAQ_T_FEED_DONE:          return 6;
-    case SAQ_T_FAULT:              return 4;
-    case SAQ_T_BEACON:             return 4;
-    case SAQ_T_LOG_ENTRY:          return 14;  /* 4+4+2+2+1+1 */
-    default:                       return -2;
+    case SAQ_T_FEED:
+        return 4;
+    case SAQ_T_STOP:
+        return 0;
+    case SAQ_T_SET_TIME:
+        return 8;
+    case SAQ_T_SET_SCHEDULE_ENTRY:
+        return 10;
+    case SAQ_T_STATUS_REQ:
+        return 4;
+    case SAQ_T_PAIR_REQ:
+        return 1;
+    case SAQ_T_SET_CONFIG:
+        return 4;
+    case SAQ_T_ACK:
+        return 5;
+    case SAQ_T_NACK:
+        return 5;
+    case SAQ_T_STATUS:
+        return 19; /* v1.0 minimum; v1.1 sends 23 */
+    case SAQ_T_FEED_DONE:
+        return 6;
+    case SAQ_T_FAULT:
+        return 4;
+    case SAQ_T_BEACON:
+        return 4;
+    case SAQ_T_LOG_ENTRY:
+        return 14; /* 4+4+2+2+1+1 */
+    default:
+        return -2;
     }
 }
 
@@ -63,8 +72,7 @@ static int payload_len_for_type(uint8_t type)
 /* Encode                                                              */
 /* ------------------------------------------------------------------ */
 
-int saq_encode_v(uint8_t *out, size_t cap, const saq_frame_t *f, uint8_t version)
-{
+int saq_encode_v(uint8_t *out, size_t cap, const saq_frame_t *f, uint8_t version) {
     if ((out == NULL) || (f == NULL) || (cap < SAQ_FRAME_HEADER_SIZE)) {
         return SAQ_CODEC_ERR_ARG;
     }
@@ -96,7 +104,7 @@ int saq_encode_v(uint8_t *out, size_t cap, const saq_frame_t *f, uint8_t version
         buf[4] = e->days;
         buf[5] = e->flags;
         put_u16(buf + 6, e->portion_g);
-        put_u16(buf + 8, 0);            /* reserved */
+        put_u16(buf + 8, 0); /* reserved */
         break;
     }
     case SAQ_T_STATUS_REQ:
@@ -186,8 +194,7 @@ int saq_encode_v(uint8_t *out, size_t cap, const saq_frame_t *f, uint8_t version
 /* Decode                                                              */
 /* ------------------------------------------------------------------ */
 
-saq_codec_err_t saq_decode(const uint8_t *in, size_t len, saq_frame_t *out)
-{
+saq_codec_err_t saq_decode(const uint8_t *in, size_t len, saq_frame_t *out) {
     if ((in == NULL) || (out == NULL)) {
         return SAQ_CODEC_ERR_ARG;
     }
@@ -319,16 +326,14 @@ saq_codec_err_t saq_decode(const uint8_t *in, size_t len, saq_frame_t *out)
 /* Dedupe window                                                       */
 /* ------------------------------------------------------------------ */
 
-void saq_dedupe_init(saq_dedupe_t *w)
-{
+void saq_dedupe_init(saq_dedupe_t *w) {
     memset(w, 0, sizeof(*w));
 }
 
-bool saq_dedupe_check(saq_dedupe_t *w, uint32_t seq)
-{
+bool saq_dedupe_check(saq_dedupe_t *w, uint32_t seq) {
     for (uint8_t i = 0; i < w->count; i++) {
         if (w->seqs[i] == seq) {
-            return false;               /* duplicate: re-ACK, do not act */
+            return false; /* duplicate: re-ACK, do not act */
         }
     }
     w->seqs[w->pos] = seq;
@@ -350,8 +355,7 @@ typedef struct {
     size_t used;
 } test_report_t;
 
-static void rpt(test_report_t *r, const char *line)
-{
+static void rpt(test_report_t *r, const char *line) {
     if ((r->buf != NULL) && (r->used + 2 < r->cap)) {
         int n = snprintf(r->buf + r->used, r->cap - r->used, "%s\n", line);
         if (n > 0) {
@@ -363,8 +367,7 @@ static void rpt(test_report_t *r, const char *line)
     }
 }
 
-static void check(test_report_t *r, const char *name, bool ok)
-{
+static void check(test_report_t *r, const char *name, bool ok) {
     char line[96];
     snprintf(line, sizeof(line), "%s %s", ok ? "ok  " : "FAIL", name);
     rpt(r, line);
@@ -373,13 +376,11 @@ static void check(test_report_t *r, const char *name, bool ok)
     }
 }
 
-static bool bytes_equal(const uint8_t *a, const uint8_t *b, size_t n)
-{
+static bool bytes_equal(const uint8_t *a, const uint8_t *b, size_t n) {
     return memcmp(a, b, n) == 0;
 }
 
-int saq_protocol_self_test(char *report, size_t report_cap)
-{
+int saq_protocol_self_test(char *report, size_t report_cap) {
     test_report_t r = {0, report, report_cap, 0};
     if ((report != NULL) && (report_cap > 0)) {
         report[0] = '\0';
@@ -402,9 +403,9 @@ int saq_protocol_self_test(char *report, size_t report_cap)
                                         0x80, 0x85, 0x74, 0x67, 0x03, 0x00, 0x00, 0x00};
         check(&r, "v1 FEED bytes", (n == 16) && bytes_equal(out, exp, 16));
     }
-    check(&r, "v1 FEED decode", (saq_decode(out, (size_t)n, &d) == SAQ_CODEC_OK) &&
-              (d.type == SAQ_T_FEED) && (d.seq == 42) && (d.epoch_s == 1735689600u) &&
-              (d.feed.portion_g == 3) && (d.feed.forced_ms == 0));
+    check(&r, "v1 FEED decode",
+          (saq_decode(out, (size_t)n, &d) == SAQ_CODEC_OK) && (d.type == SAQ_T_FEED) && (d.seq == 42) &&
+              (d.epoch_s == 1735689600u) && (d.feed.portion_g == 3) && (d.feed.forced_ms == 0));
 
     /* ---- vector 2: STOP seq 43, epoch 1735689601 (header-only) ---- */
     memset(&f, 0, sizeof(f));
@@ -414,8 +415,7 @@ int saq_protocol_self_test(char *report, size_t report_cap)
     f.epoch_s = 1735689601u;
     n = saq_encode_v(out, sizeof(out), &f, 0x10);
     {
-        static const uint8_t exp[12] = {0xA5, 0x10, 0x11, 0x01, 0x2B, 0x00, 0x00, 0x00,
-                                        0x81, 0x85, 0x74, 0x67};
+        static const uint8_t exp[12] = {0xA5, 0x10, 0x11, 0x01, 0x2B, 0x00, 0x00, 0x00, 0x81, 0x85, 0x74, 0x67};
         check(&r, "v2 STOP bytes (12, header-only)", (n == 12) && bytes_equal(out, exp, 12));
     }
 
@@ -429,8 +429,8 @@ int saq_protocol_self_test(char *report, size_t report_cap)
     f.ack.result = SAQ_RES_OK;
     n = saq_encode_v(out, sizeof(out), &f, 0x10);
     {
-        static const uint8_t exp[17] = {0xA5, 0x10, 0x80, 0x02, 0x01, 0x00, 0x00, 0x00,
-                                        0x80, 0x85, 0x74, 0x67, 0x2A, 0x00, 0x00, 0x00, 0x00};
+        static const uint8_t exp[17] = {0xA5, 0x10, 0x80, 0x02, 0x01, 0x00, 0x00, 0x00, 0x80,
+                                        0x85, 0x74, 0x67, 0x2A, 0x00, 0x00, 0x00, 0x00};
         check(&r, "v3 ACK bytes", (n == 17) && bytes_equal(out, exp, 17));
     }
 
@@ -444,8 +444,8 @@ int saq_protocol_self_test(char *report, size_t report_cap)
     f.ack.result = SAQ_RES_OK;
     n = saq_encode_v(out, sizeof(out), &f, 0x10);
     {
-        static const uint8_t exp[17] = {0xA5, 0x10, 0x80, 0x02, 0x01, 0x00, 0x00, 0x00,
-                                        0x00, 0x00, 0x00, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x00};
+        static const uint8_t exp[17] = {0xA5, 0x10, 0x80, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00,
+                                        0x00, 0x00, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x00};
         check(&r, "v4 ACK no-clock bytes", (n == 17) && bytes_equal(out, exp, 17));
         check(&r, "v4 epoch 0 decodes OK", saq_decode(out, (size_t)n, &d) == SAQ_CODEC_OK);
     }
@@ -463,22 +463,21 @@ int saq_protocol_self_test(char *report, size_t report_cap)
     f.status.last_log_seq = 12;
     f.status.uptime_s = 3600;
     f.status.link_seq = 7;
-    f.status.ms_per_g = 0;              /* v1.0 frame: tail absent */
+    f.status.ms_per_g = 0; /* v1.0 frame: tail absent */
     f.status.default_portion_g = 0;
     n = saq_encode_v(out, sizeof(out), &f, 0x10);
     {
         /* v1.0 STATUS payload is exactly the first 19 bytes of the v1.1
          * payload; trim the 4-byte tail to reproduce vector 5. */
-        uint8_t exp[31] = {0xA5, 0x10, 0x90, 0x00, 0x07, 0x00, 0x00, 0x00, 0x80, 0x85, 0x74, 0x67,
-                           0x01, 0x04, 0x00, 0x34, 0x73, 0x67, 0x50, 0x0C, 0x00, 0x00, 0x00,
-                           0x10, 0x0E, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00};
+        uint8_t exp[31] = {0xA5, 0x10, 0x90, 0x00, 0x07, 0x00, 0x00, 0x00, 0x80, 0x85, 0x74,
+                           0x67, 0x01, 0x04, 0x00, 0x34, 0x73, 0x67, 0x50, 0x0C, 0x00, 0x00,
+                           0x00, 0x10, 0x0E, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00};
         check(&r, "v5 STATUS v1.0 bytes (31)", (n == 31) && bytes_equal(out, exp, 31));
         check(&r, "v5 STATUS decode, no config tail",
-              (saq_decode(out, 31, &d) == SAQ_CODEC_OK) && !d.status.has_config &&
-              (d.status.clock_conf == 1) && (d.status.sched_count == 4) &&
-              (d.status.last_feed_epoch == 1735603200u) && (d.status.hopper_pct == 80) &&
-              (d.status.last_log_seq == 12) && (d.status.uptime_s == 3600) &&
-              (d.status.link_seq == 7));
+              (saq_decode(out, 31, &d) == SAQ_CODEC_OK) && !d.status.has_config && (d.status.clock_conf == 1) &&
+                  (d.status.sched_count == 4) && (d.status.last_feed_epoch == 1735603200u) &&
+                  (d.status.hopper_pct == 80) && (d.status.last_log_seq == 12) && (d.status.uptime_s == 3600) &&
+                  (d.status.link_seq == 7));
     }
 
     /* ---- v1.1: extended STATUS (23-byte payload), vector 12 ---- */
@@ -497,15 +496,14 @@ int saq_protocol_self_test(char *report, size_t report_cap)
     f.status.default_portion_g = 3;
     n = saq_encode(out, sizeof(out), &f);
     {
-        static const uint8_t exp[35] = {
-            0xA5, 0x11, 0x90, 0x00, 0x07, 0x00, 0x00, 0x00, 0x80, 0x85, 0x74, 0x67,
-            0x01, 0x04, 0x00, 0x34, 0x73, 0x67, 0x50, 0x0C, 0x00, 0x00, 0x00,
-            0x10, 0x0E, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x70, 0x17, 0x03, 0x00};
+        static const uint8_t exp[35] = {0xA5, 0x11, 0x90, 0x00, 0x07, 0x00, 0x00, 0x00, 0x80, 0x85, 0x74, 0x67,
+                                        0x01, 0x04, 0x00, 0x34, 0x73, 0x67, 0x50, 0x0C, 0x00, 0x00, 0x00, 0x10,
+                                        0x0E, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x70, 0x17, 0x03, 0x00};
         check(&r, "v12 STATUS v1.1 bytes (35)", (n == 35) && bytes_equal(out, exp, 35));
     }
     check(&r, "v1.1 STATUS config tail",
-          (saq_decode(out, (size_t)n, &d) == SAQ_CODEC_OK) && d.status.has_config &&
-          (d.status.ms_per_g == 6000) && (d.status.default_portion_g == 3));
+          (saq_decode(out, (size_t)n, &d) == SAQ_CODEC_OK) && d.status.has_config && (d.status.ms_per_g == 6000) &&
+              (d.status.default_portion_g == 3));
     /* A v1.1 STATUS cut back to its first 31 bytes must still decode as the
      * v1.0 layout — trailing-byte tolerance in both directions. */
     check(&r, "v1.1 STATUS truncated to v1.0 still decodes",
@@ -521,9 +519,8 @@ int saq_protocol_self_test(char *report, size_t report_cap)
     f.set_config.default_portion_g = 3;
     n = saq_encode(out, sizeof(out), &f);
     {
-        static const uint8_t exp[16] = {
-            0xA5, 0x11, 0x16, 0x01, 0x2C, 0x00, 0x00, 0x00,
-            0x80, 0x85, 0x74, 0x67, 0x70, 0x17, 0x03, 0x00};
+        static const uint8_t exp[16] = {0xA5, 0x11, 0x16, 0x01, 0x2C, 0x00, 0x00, 0x00,
+                                        0x80, 0x85, 0x74, 0x67, 0x70, 0x17, 0x03, 0x00};
         check(&r, "v10 SET_CONFIG bytes", (n == 16) && bytes_equal(out, exp, 16));
     }
 
@@ -540,18 +537,15 @@ int saq_protocol_self_test(char *report, size_t report_cap)
     f.log_entry.result = SAQ_FEED_COMPLETED;
     n = saq_encode(out, sizeof(out), &f);
     {
-        static const uint8_t exp[26] = {
-            0xA5, 0x11, 0x94, 0x00, 0x08, 0x00, 0x00, 0x00, 0x80, 0x85, 0x74, 0x67,
-            0x0D, 0x00, 0x00, 0x00, 0x00, 0x34, 0x73, 0x67, 0x03, 0x00,
-            0x50, 0x46, 0x00, 0x00};
+        static const uint8_t exp[26] = {0xA5, 0x11, 0x94, 0x00, 0x08, 0x00, 0x00, 0x00, 0x80, 0x85, 0x74, 0x67, 0x0D,
+                                        0x00, 0x00, 0x00, 0x00, 0x34, 0x73, 0x67, 0x03, 0x00, 0x50, 0x46, 0x00, 0x00};
         check(&r, "v11 LOG_ENTRY bytes (26)", (n == 26) && bytes_equal(out, exp, 26));
     }
     check(&r, "v1.1 LOG_ENTRY decode",
-          (saq_decode(out, (size_t)n, &d) == SAQ_CODEC_OK) &&
-          (d.log_entry.log_seq == 13) && (d.log_entry.event_epoch == 1735603200u) &&
-          (d.log_entry.portion_g == 3) && (d.log_entry.actual_ms == 18000) &&
-          (d.log_entry.trigger == SAQ_TRIGGER_SCHEDULED) &&
-          (d.log_entry.result == SAQ_FEED_COMPLETED));
+          (saq_decode(out, (size_t)n, &d) == SAQ_CODEC_OK) && (d.log_entry.log_seq == 13) &&
+              (d.log_entry.event_epoch == 1735603200u) && (d.log_entry.portion_g == 3) &&
+              (d.log_entry.actual_ms == 18000) && (d.log_entry.trigger == SAQ_TRIGGER_SCHEDULED) &&
+              (d.log_entry.result == SAQ_FEED_COMPLETED));
 
     /* ---- vector 6: bad magic ---- */
     {
@@ -575,8 +569,7 @@ int saq_protocol_self_test(char *report, size_t report_cap)
     }
 
     /* ---- truncation and oversize ---- */
-    check(&r, "truncated FEED rejected",
-          saq_decode(out, 15, &d) == SAQ_CODEC_ERR_TRUNCATED);  /* header + 3B < 4B */
+    check(&r, "truncated FEED rejected", saq_decode(out, 15, &d) == SAQ_CODEC_ERR_TRUNCATED); /* header + 3B < 4B */
     {
         /* 12-byte header + 239 bytes of payload = oversize */
         uint8_t big[SAQ_FRAME_HEADER_SIZE + SAQ_MAX_PAYLOAD + 1] = {0};
@@ -584,8 +577,7 @@ int saq_protocol_self_test(char *report, size_t report_cap)
         big[1] = 0x10;
         big[2] = SAQ_T_FEED;
         big[3] = 0x01;
-        check(&r, "oversize payload rejected",
-              saq_decode(big, sizeof(big), &d) == SAQ_CODEC_ERR_OVERSIZE);
+        check(&r, "oversize payload rejected", saq_decode(big, sizeof(big), &d) == SAQ_CODEC_ERR_OVERSIZE);
     }
 
     /* ---- vector 9: dedupe — a duplicate FEED feeds once, ACKs twice ---- */
@@ -619,12 +611,11 @@ int saq_protocol_self_test(char *report, size_t report_cap)
         sf.sched_entry.entry.portion_g = 3;
         int m = saq_encode(out, sizeof(out), &sf);
         check(&r, "sched entry wire roundtrip",
-              (m == 22) && (saq_decode(out, (size_t)m, &sd) == SAQ_CODEC_OK) &&
-              (sd.sched_entry.index == 2) && (sd.sched_entry.count == 3) &&
-              (sd.sched_entry.entry.hour == 8) && (sd.sched_entry.entry.minute == 30) &&
-              (sd.sched_entry.entry.days == (SAQ_DAY_MON | SAQ_DAY_WED | SAQ_DAY_FRI)) &&
-              (sd.sched_entry.entry.flags == SAQ_SCHED_FLAG_ENABLED) &&
-              (sd.sched_entry.entry.portion_g == 3));
+              (m == 22) && (saq_decode(out, (size_t)m, &sd) == SAQ_CODEC_OK) && (sd.sched_entry.index == 2) &&
+                  (sd.sched_entry.count == 3) && (sd.sched_entry.entry.hour == 8) &&
+                  (sd.sched_entry.entry.minute == 30) &&
+                  (sd.sched_entry.entry.days == (SAQ_DAY_MON | SAQ_DAY_WED | SAQ_DAY_FRI)) &&
+                  (sd.sched_entry.entry.flags == SAQ_SCHED_FLAG_ENABLED) && (sd.sched_entry.entry.portion_g == 3));
     }
 
     {

@@ -7,64 +7,68 @@
  */
 
 #include "ui_home.h"
-#include "ui_theme.h"
-#include "ui_chrome.h"
 #include "app_model.h"
-#include "saq_schedule.h"
 #include "saq_portion.h"
+#include "saq_schedule.h"
+#include "ui_chrome.h"
+#include "ui_theme.h"
 
+#include <Arduino.h>
 #include <stdio.h>
 #include <string.h>
-#include <Arduino.h>
 
 /* Overlay accessors implemented in ui_history.cpp / ui_diagnostics.cpp */
 lv_obj_t *ui_history_get(void);
 lv_obj_t *ui_diagnostics_get(void);
 
-static lv_obj_t *s_card_next;      /* NEXT FEED */
+static lv_obj_t *s_card_next; /* NEXT FEED */
 static lv_obj_t *s_lbl_next_time;
 static lv_obj_t *s_lbl_next_sub;
-static lv_obj_t *s_card_hopper;    /* HOPPER */
+static lv_obj_t *s_card_hopper; /* HOPPER */
 static lv_obj_t *s_bar_hopper;
 static lv_obj_t *s_lbl_hopper_pct;
 static lv_obj_t *s_lbl_hopper_sub;
-static lv_obj_t *s_card_last;      /* LAST FEED */
+static lv_obj_t *s_card_last; /* LAST FEED */
 static lv_obj_t *s_lbl_last_time;
 static lv_obj_t *s_lbl_last_sub;
 static lv_obj_t *s_btn_feed_now;
-static lv_obj_t *s_stale_chip;     /* "Offline hh:mm" chip */
+static lv_obj_t *s_stale_chip; /* "Offline hh:mm" chip */
 static lv_obj_t *s_fault_banner;
 
 /* ------------------------------------------------------------------ */
 /* Card geometry: two columns, 368x156, 24 outer margin, 16 gutter      */
 /* ------------------------------------------------------------------ */
 
-#define HOME_CARD_W   368
-#define HOME_CARD_H   156
-#define HOME_X0       SAQ_SP_LG
-#define HOME_Y0       SAQ_SP_LG
-#define HOME_GUTTER   SAQ_SP_MD
+#define HOME_CARD_W 368
+#define HOME_CARD_H 156
+#define HOME_X0     SAQ_SP_LG
+#define HOME_Y0     SAQ_SP_LG
+#define HOME_GUTTER SAQ_SP_MD
 
-static void on_card_click(lv_event_t *e)
-{
+static void on_card_click(lv_event_t *e) {
     const int id = (int)(intptr_t)lv_event_get_user_data(e);
     switch (id) {
-    case 0:  ui_nav_tab(UI_TAB_SCHED); break;    /* "Set a schedule" target */
-    case 1:  ui_show_overlay(ui_diagnostics_get()); break;  /* hopper -> Diagnostics */
-    case 2:  ui_show_overlay(ui_history_get()); break;      /* last feed -> History */
-    default: break;
+    case 0:
+        ui_nav_tab(UI_TAB_SCHED);
+        break; /* "Set a schedule" target */
+    case 1:
+        ui_show_overlay(ui_diagnostics_get());
+        break; /* hopper -> Diagnostics */
+    case 2:
+        ui_show_overlay(ui_history_get());
+        break; /* last feed -> History */
+    default:
+        break;
     }
 }
 
-static void on_feed_now(lv_event_t *e)
-{
+static void on_feed_now(lv_event_t *e) {
     (void)e;
     /* Never feeds from here — pushes the FeedNow flow (screens.md). */
     ui_nav_tab(UI_TAB_FEED);
 }
 
-static void on_home_timer(lv_timer_t *t)
-{
+static void on_home_timer(lv_timer_t *t) {
     (void)t;
     ui_home_refresh();
 }
@@ -73,8 +77,7 @@ static void on_home_timer(lv_timer_t *t)
 /* Content builders                                                    */
 /* ------------------------------------------------------------------ */
 
-static void fill_next_feed(void)
-{
+static void fill_next_feed(void) {
     if (!g_app.clock_ok) {
         /* Never derive a "next feed" from a clock that is not synced. */
         lv_label_set_text(s_lbl_next_time, "-");
@@ -84,8 +87,7 @@ static void fill_next_feed(void)
     }
     uint32_t next = 0;
     uint8_t idx = 0;
-    if (!saq_sched_next_due(g_app.sched.entries, g_app.sched.count,
-                            model_local_epoch(), &next, &idx)) {
+    if (!saq_sched_next_due(g_app.sched.entries, g_app.sched.count, model_local_epoch(), &next, &idx)) {
         lv_label_set_text(s_lbl_next_time, "-");
         lv_label_set_text(s_lbl_next_sub, "None scheduled");
         lv_obj_set_style_text_color(s_lbl_next_sub, SAQ_C_TEXT_MUTED, LV_PART_MAIN);
@@ -93,8 +95,7 @@ static void fill_next_feed(void)
     }
     char tbuf[8];
     const uint32_t sod = next % 86400u;
-    snprintf(tbuf, sizeof(tbuf), "%02u:%02u",
-             (unsigned)(sod / 3600u), (unsigned)((sod % 3600u) / 60u));
+    snprintf(tbuf, sizeof(tbuf), "%02u:%02u", (unsigned)(sod / 3600u), (unsigned)((sod % 3600u) / 60u));
     lv_label_set_text(s_lbl_next_time, tbuf);
 
     uint32_t secs = 0;
@@ -103,11 +104,9 @@ static void fill_next_feed(void)
     }
     char sub[48];
     if (secs >= 86400u) {
-        snprintf(sub, sizeof(sub), "in %u d %u h", (unsigned)(secs / 86400u),
-                 (unsigned)((secs % 86400u) / 3600u));
+        snprintf(sub, sizeof(sub), "in %u d %u h", (unsigned)(secs / 86400u), (unsigned)((secs % 86400u) / 3600u));
     } else if (secs >= 3600u) {
-        snprintf(sub, sizeof(sub), "in %u h %u m", (unsigned)(secs / 3600u),
-                 (unsigned)((secs % 3600u) / 60u));
+        snprintf(sub, sizeof(sub), "in %u h %u m", (unsigned)(secs / 3600u), (unsigned)((secs % 3600u) / 60u));
     } else {
         snprintf(sub, sizeof(sub), "in %u m", (unsigned)((secs + 59u) / 60u));
     }
@@ -118,8 +117,7 @@ static void fill_next_feed(void)
     lv_obj_set_style_text_color(s_lbl_next_sub, SAQ_C_TEXT_MUTED, LV_PART_MAIN);
 }
 
-static void fill_hopper(void)
-{
+static void fill_hopper(void) {
     if (g_app.st_hopper_pct == SAQ_HOPPER_UNKNOWN) {
         /* 255 means no sensor — showing "0%" would train the user to
          * ignore the field (docs/07). */
@@ -131,13 +129,11 @@ static void fill_hopper(void)
         char buf[12];
         snprintf(buf, sizeof(buf), "%u%%", (unsigned)g_app.st_hopper_pct);
         lv_label_set_text(s_lbl_hopper_pct, buf);
-        lv_label_set_text(s_lbl_hopper_sub,
-                          (g_app.st_hopper_pct < 20) ? "Low — refill soon" : "");
+        lv_label_set_text(s_lbl_hopper_sub, (g_app.st_hopper_pct < 20) ? "Low — refill soon" : "");
     }
 }
 
-static void fill_last_feed(void)
-{
+static void fill_last_feed(void) {
     if (g_app.hist_count == 0) {
         lv_label_set_text(s_lbl_last_time, "Never");
         lv_label_set_text(s_lbl_last_sub, "Nothing fed yet");
@@ -148,12 +144,10 @@ static void fill_last_feed(void)
     const uint32_t now_local = model_local_epoch();
     const uint32_t sod = ev_local % 86400u;
     char tbuf[10];
-    snprintf(tbuf, sizeof(tbuf), "%02u:%02u",
-             (unsigned)(sod / 3600u), (unsigned)((sod % 3600u) / 60u));
+    snprintf(tbuf, sizeof(tbuf), "%02u:%02u", (unsigned)(sod / 3600u), (unsigned)((sod % 3600u) / 60u));
 
     char when[24];
-    if ((now_local >= ev_local) && ((now_local - ev_local) < 86400u) &&
-        ((now_local / 86400u) == (ev_local / 86400u))) {
+    if ((now_local >= ev_local) && ((now_local - ev_local) < 86400u) && ((now_local / 86400u) == (ev_local / 86400u))) {
         snprintf(when, sizeof(when), "Today %s", tbuf);
     } else if ((now_local >= ev_local) && ((now_local - ev_local) < 2u * 86400u)) {
         snprintf(when, sizeof(when), "Yesterday %s", tbuf);
@@ -164,10 +158,17 @@ static void fill_last_feed(void)
 
     const char *trig = "?";
     switch (h->trigger) {
-    case SAQ_TRIGGER_SCHEDULED:    trig = "scheduled"; break;
-    case SAQ_TRIGGER_MANUAL_HMI:   trig = "manual"; break;
-    case SAQ_TRIGGER_LOCAL_BUTTON: trig = "button"; break;
-    default: break;
+    case SAQ_TRIGGER_SCHEDULED:
+        trig = "scheduled";
+        break;
+    case SAQ_TRIGGER_MANUAL_HMI:
+        trig = "manual";
+        break;
+    case SAQ_TRIGGER_LOCAL_BUTTON:
+        trig = "button";
+        break;
+    default:
+        break;
     }
     char sub[64];
     if (h->result == SAQ_FEED_COMPLETED) {
@@ -180,16 +181,15 @@ static void fill_last_feed(void)
         snprintf(sub, sizeof(sub), "%u g, %s, interrupted", (unsigned)h->portion_g, trig);
     }
     lv_label_set_text(s_lbl_last_sub, sub);
-    lv_obj_set_style_text_color(s_lbl_last_sub, (h->result == SAQ_FEED_COMPLETED) ? SAQ_C_TEXT_MUTED : SAQ_C_WARN, LV_PART_MAIN);
+    lv_obj_set_style_text_color(s_lbl_last_sub, (h->result == SAQ_FEED_COMPLETED) ? SAQ_C_TEXT_MUTED : SAQ_C_WARN,
+                                LV_PART_MAIN);
 }
 
 /* ------------------------------------------------------------------ */
 /* Build + refresh                                                     */
 /* ------------------------------------------------------------------ */
 
-static lv_obj_t *make_stat_card(lv_obj_t *parent, const char *caption,
-                                int x, int y, int click_id)
-{
+static lv_obj_t *make_stat_card(lv_obj_t *parent, const char *caption, int x, int y, int click_id) {
     lv_obj_t *card = ui_make_card(parent, HOME_CARD_W, HOME_CARD_H);
     lv_obj_set_pos(card, x, y);
     if (click_id >= 0) {
@@ -203,8 +203,7 @@ static lv_obj_t *make_stat_card(lv_obj_t *parent, const char *caption,
     return card;
 }
 
-void ui_home_create(lv_obj_t *parent)
-{
+void ui_home_create(lv_obj_t *parent) {
     /* ---- NEXT FEED ---- */
     s_card_next = make_stat_card(parent, "NEXT FEED", HOME_X0, HOME_Y0, 0);
     s_lbl_next_time = ui_make_label(s_card_next, SAQ_FONT_HERO, SAQ_C_TEXT);
@@ -214,8 +213,7 @@ void ui_home_create(lv_obj_t *parent)
     lv_label_set_text(s_lbl_next_sub, "-");
 
     /* ---- HOPPER ---- */
-    s_card_hopper = make_stat_card(parent, "HOPPER",
-                                   HOME_X0 + HOME_CARD_W + HOME_GUTTER, HOME_Y0, 1);
+    s_card_hopper = make_stat_card(parent, "HOPPER", HOME_X0 + HOME_CARD_W + HOME_GUTTER, HOME_Y0, 1);
     s_lbl_hopper_pct = ui_make_label(s_card_hopper, SAQ_FONT_HERO, SAQ_C_TEXT);
     lv_obj_align(s_lbl_hopper_pct, LV_ALIGN_TOP_RIGHT, 0, SAQ_SP_MD + SAQ_SP_XS);
     lv_label_set_text(s_lbl_hopper_pct, "No sensor");
@@ -231,8 +229,7 @@ void ui_home_create(lv_obj_t *parent)
     lv_obj_align(s_lbl_hopper_sub, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 
     /* ---- LAST FEED ---- */
-    s_card_last = make_stat_card(parent, "LAST FEED",
-                                 HOME_X0, HOME_Y0 + HOME_CARD_H + HOME_GUTTER, 2);
+    s_card_last = make_stat_card(parent, "LAST FEED", HOME_X0, HOME_Y0 + HOME_CARD_H + HOME_GUTTER, 2);
     s_lbl_last_time = ui_make_label(s_card_last, SAQ_FONT_HERO, SAQ_C_TEXT);
     lv_obj_align(s_lbl_last_time, LV_ALIGN_TOP_LEFT, 0, SAQ_SP_MD + SAQ_SP_XS);
     lv_label_set_text(s_lbl_last_time, "Never");
@@ -242,8 +239,7 @@ void ui_home_create(lv_obj_t *parent)
     /* ---- FEED NOW (a push, never a direct feed) ---- */
     s_btn_feed_now = ui_make_btn(parent, UI_BTN_PRIMARY);
     lv_obj_set_size(s_btn_feed_now, HOME_CARD_W, HOME_CARD_H);
-    lv_obj_set_pos(s_btn_feed_now, HOME_X0 + HOME_CARD_W + HOME_GUTTER,
-                   HOME_Y0 + HOME_CARD_H + HOME_GUTTER);
+    lv_obj_set_pos(s_btn_feed_now, HOME_X0 + HOME_CARD_W + HOME_GUTTER, HOME_Y0 + HOME_CARD_H + HOME_GUTTER);
     lv_obj_add_event_cb(s_btn_feed_now, on_feed_now, LV_EVENT_CLICKED, NULL);
     lv_obj_t *fl = ui_make_label(s_btn_feed_now, SAQ_FONT_HEADING, SAQ_C_ON_PRIMARY);
     lv_label_set_text(fl, "FEED NOW");
@@ -274,12 +270,11 @@ void ui_home_create(lv_obj_t *parent)
     lv_obj_align(fbl, LV_ALIGN_LEFT_MID, SAQ_SP_SM, 0);
     lv_label_set_text(fbl, "Feeder fault — see Diagnostics");
 
-    (void)lv_timer_create(on_home_timer, 30000, NULL);   /* "in x h" countdown */
+    (void)lv_timer_create(on_home_timer, 30000, NULL); /* "in x h" countdown */
     ui_home_refresh();
 }
 
-void ui_home_refresh(void)
-{
+void ui_home_refresh(void) {
     fill_next_feed();
     fill_hopper();
     fill_last_feed();

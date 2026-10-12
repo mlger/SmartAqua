@@ -28,8 +28,7 @@
 
 static const char *TAG = "hmi/main";
 
-static void log_board_facts(void)
-{
+static void log_board_facts(void) {
     esp_chip_info_t chip;
     esp_chip_info(&chip);
 
@@ -39,13 +38,12 @@ static void log_board_facts(void)
     ESP_LOGI(TAG, "SmartAqua HMI (ESP32-S3-Touch-LCD-4.3B)");
     ESP_LOGI(TAG, "cores=%d  silicon rev=v%d.%d", chip.cores, chip.revision / 100, chip.revision % 100);
     ESP_LOGI(TAG, "flash=%" PRIu32 " MB", flash_size / (1024 * 1024));
-    ESP_LOGI(TAG, "free heap=%" PRIu32 " B, free PSRAM=%" PRIu32 " B",
-             esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    ESP_LOGI(TAG, "free heap=%" PRIu32 " B, free PSRAM=%" PRIu32 " B", esp_get_free_heap_size(),
+             heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     ESP_LOGI(TAG, "Scaffolding only — no UI yet. See docs/09-roadmap-and-milestones.md (M1).");
 }
 
-void app_main(void)
-{
+void app_main(void) {
     log_board_facts();
 
     /* Nothing to do yet. Deliberately no heartbeat log: the boot output is

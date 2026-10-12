@@ -22,8 +22,7 @@ lv_style_t saq_style_lbl_caption;
 lv_style_t saq_style_lbl_muted_val;
 lv_style_t saq_style_input;
 
-void ui_theme_init(void)
-{
+void ui_theme_init(void) {
     /* Screen background */
     lv_style_init(&saq_style_screen);
     lv_style_set_bg_color(&saq_style_screen, SAQ_C_BG);
@@ -122,8 +121,7 @@ void ui_theme_init(void)
     lv_style_set_radius(&saq_style_input, SAQ_R_MD);
 }
 
-lv_obj_t *ui_make_btn(lv_obj_t *parent, ui_btn_kind_t kind)
-{
+lv_obj_t *ui_make_btn(lv_obj_t *parent, ui_btn_kind_t kind) {
     lv_obj_t *b = lv_btn_create(parent);
     switch (kind) {
     case UI_BTN_PRIMARY:
@@ -134,8 +132,7 @@ lv_obj_t *ui_make_btn(lv_obj_t *parent, ui_btn_kind_t kind)
         break;
     case UI_BTN_DANGER:
         lv_obj_add_style(b, &saq_style_btn_danger, LV_PART_MAIN);
-        lv_obj_set_style_bg_color(b, lv_color_darken(SAQ_C_DANGER, LV_OPA_30),
-                                  LV_PART_MAIN | LV_STATE_PRESSED);
+        lv_obj_set_style_bg_color(b, lv_color_darken(SAQ_C_DANGER, LV_OPA_30), LV_PART_MAIN | LV_STATE_PRESSED);
         lv_obj_set_style_bg_color(b, SAQ_C_BORDER, LV_PART_MAIN | LV_STATE_DISABLED);
         lv_obj_set_style_text_color(b, SAQ_C_TEXT_MUTED, LV_PART_MAIN | LV_STATE_DISABLED);
         break;
@@ -153,8 +150,7 @@ lv_obj_t *ui_make_btn(lv_obj_t *parent, ui_btn_kind_t kind)
     return b;
 }
 
-lv_obj_t *ui_make_card(lv_obj_t *parent, int32_t w, int32_t h)
-{
+lv_obj_t *ui_make_card(lv_obj_t *parent, int32_t w, int32_t h) {
     lv_obj_t *card = lv_obj_create(parent);
     lv_obj_remove_style_all(card);
     lv_obj_add_style(card, &saq_style_card, LV_PART_MAIN);
@@ -163,8 +159,7 @@ lv_obj_t *ui_make_card(lv_obj_t *parent, int32_t w, int32_t h)
     return card;
 }
 
-lv_obj_t *ui_make_label(lv_obj_t *parent, const lv_font_t *font, lv_color_t color)
-{
+lv_obj_t *ui_make_label(lv_obj_t *parent, const lv_font_t *font, lv_color_t color) {
     lv_obj_t *lbl = lv_label_create(parent);
     lv_obj_set_style_text_font(lbl, font, LV_PART_MAIN);
     lv_obj_set_style_text_color(lbl, color, LV_PART_MAIN);

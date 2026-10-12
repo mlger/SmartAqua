@@ -12,15 +12,15 @@
  */
 
 #include "ui_settings.h"
-#include "ui_theme.h"
-#include "ui_chrome.h"
+#include "SmartAquaHMI_version.h"
 #include "app_model.h"
-#include "saq_rtc.h"
 #include "saq_link.h"
 #include "saq_portion.h"
+#include "saq_rtc.h"
 #include "saq_schedule.h"
-#include "SmartAquaHMI_version.h"
+#include "ui_chrome.h"
 #include "ui_diagnostics.h"
+#include "ui_theme.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -28,7 +28,7 @@
 static lv_obj_t *s_lbl_pair_state;
 static lv_obj_t *s_lbl_pair_mac;
 static lv_obj_t *s_btn_pair;
-static lv_obj_t *s_lbl_pair_btn;      /* label inside the Pair button */
+static lv_obj_t *s_lbl_pair_btn; /* label inside the Pair button */
 
 static lv_obj_t *s_lbl_time_state;
 static lv_obj_t *s_tz_roller;
@@ -45,12 +45,11 @@ static lv_obj_t *s_btn_cal;
 static lv_obj_t *s_cal_modal;
 static lv_obj_t *s_cal_grams;
 
-#define SETTINGS_CARD_W   (800 - 2 * SAQ_SP_LG)
-#define SETTINGS_CARD_H   96
-#define SETTINGS_X        SAQ_SP_LG
+#define SETTINGS_CARD_W (800 - 2 * SAQ_SP_LG)
+#define SETTINGS_CARD_H 96
+#define SETTINGS_X      SAQ_SP_LG
 
-static lv_obj_t *make_section(lv_obj_t *parent, const char *heading, int y)
-{
+static lv_obj_t *make_section(lv_obj_t *parent, const char *heading, int y) {
     lv_obj_t *card = ui_make_card(parent, SETTINGS_CARD_W, LV_SIZE_CONTENT);
     /* fixed height instead: sections are tall enough as drawn */
     lv_obj_set_size(card, SETTINGS_CARD_W, SETTINGS_CARD_H);
@@ -67,8 +66,7 @@ static lv_obj_t *make_section(lv_obj_t *parent, const char *heading, int y)
 
 static void on_pair_arm(void);
 
-static void on_repair_confirm(bool yes, void *user)
-{
+static void on_repair_confirm(bool yes, void *user) {
     (void)user;
     if (yes) {
         link_unpair();
@@ -76,26 +74,23 @@ static void on_repair_confirm(bool yes, void *user)
     }
 }
 
-static void on_pair_click(lv_event_t *e)
-{
+static void on_pair_click(lv_event_t *e) {
     (void)e;
     if (g_app.paired) {
-        ui_confirm("Re-pair", "Replace the stored feeder with a new pairing?",
-                   "Re-pair", "Cancel", false, on_repair_confirm, NULL);
+        ui_confirm("Re-pair", "Replace the stored feeder with a new pairing?", "Re-pair", "Cancel", false,
+                   on_repair_confirm, NULL);
         return;
     }
     on_pair_arm();
 }
 
-static void on_pair_arm(void)
-{
+static void on_pair_arm(void) {
     link_set_pair_armed(true);
     lv_label_set_text(s_lbl_pair_state, "Pairing… hold the feeder button 3 s");
     lv_obj_add_state(s_btn_pair, LV_STATE_DISABLED);
 }
 
-void ui_settings_on_beacon(const uint8_t mac[6], uint8_t fw_major, uint8_t fw_minor)
-{
+void ui_settings_on_beacon(const uint8_t mac[6], uint8_t fw_major, uint8_t fw_minor) {
     g_app.feeder_fw_major = fw_major;
     g_app.feeder_fw_minor = fw_minor;
     if (!link_pair_armed()) {
@@ -105,14 +100,12 @@ void ui_settings_on_beacon(const uint8_t mac[6], uint8_t fw_major, uint8_t fw_mi
      * window only opens when someone is standing at the tank pressing its
      * button, which is the physical-gesture half of the auth. */
     char buf[64];
-    snprintf(buf, sizeof(buf), "Found feeder (fw %u.%u) — pairing…",
-             (unsigned)fw_major, (unsigned)fw_minor);
+    snprintf(buf, sizeof(buf), "Found feeder (fw %u.%u) — pairing…", (unsigned)fw_major, (unsigned)fw_minor);
     lv_label_set_text(s_lbl_pair_state, buf);
     (void)link_pair_to(mac);
 }
 
-void ui_settings_on_paired(void)
-{
+void ui_settings_on_paired(void) {
     s_cal_state = CAL_IDLE;
     ui_settings_refresh();
     ui_toast("Paired with feeder", UI_TOAST_OK);
@@ -122,8 +115,7 @@ void ui_settings_on_paired(void)
 /* Time section                                                        */
 /* ------------------------------------------------------------------ */
 
-static void make_options(char *buf, size_t cap, int from, int to, const char *fmt)
-{
+static void make_options(char *buf, size_t cap, int from, int to, const char *fmt) {
     buf[0] = '\0';
     for (int i = from; i <= to; i++) {
         char item[8];
@@ -135,16 +127,14 @@ static void make_options(char *buf, size_t cap, int from, int to, const char *fm
     }
 }
 
-static void ts_close(void)
-{
+static void ts_close(void) {
     if (s_ts_modal != NULL) {
         lv_obj_del(s_ts_modal);
         s_ts_modal = NULL;
     }
 }
 
-static void on_ts_save(lv_event_t *e)
-{
+static void on_ts_save(lv_event_t *e) {
     (void)e;
     const int y = 2020 + (int)lv_roller_get_selected(s_ts_year);
     const int mo = 1 + (int)lv_roller_get_selected(s_ts_mon);
@@ -180,14 +170,12 @@ static void on_ts_save(lv_event_t *e)
     ts_close();
 }
 
-static void on_ts_cancel(lv_event_t *e)
-{
+static void on_ts_cancel(lv_event_t *e) {
     (void)e;
     ts_close();
 }
 
-static void on_set_time_click(lv_event_t *e)
-{
+static void on_set_time_click(lv_event_t *e) {
     (void)e;
     if (s_ts_modal != NULL) {
         return;
@@ -284,8 +272,7 @@ static void on_set_time_click(lv_event_t *e)
     lv_label_set_text(sl, "Set time");
 }
 
-static void on_tz_changed(lv_event_t *e)
-{
+static void on_tz_changed(lv_event_t *e) {
     (void)e;
     const int32_t tz = (int32_t)lv_roller_get_selected(s_tz_roller) - 12;
     model_set_tz(tz);
@@ -299,16 +286,14 @@ static void on_tz_changed(lv_event_t *e)
 /* Calibration flow                                                    */
 /* ------------------------------------------------------------------ */
 
-static void cal_close_modal(void)
-{
+static void cal_close_modal(void) {
     if (s_cal_modal != NULL) {
         lv_obj_del(s_cal_modal);
         s_cal_modal = NULL;
     }
 }
 
-static void on_cal_weigh_save(lv_event_t *e)
-{
+static void on_cal_weigh_save(lv_event_t *e) {
     (void)e;
     /* roller holds whole grams, 1..40 */
     const int grams = 1 + (int)lv_roller_get_selected(s_cal_grams);
@@ -319,7 +304,7 @@ static void on_cal_weigh_save(lv_event_t *e)
     uint32_t ms_per_g = 20000u / (uint32_t)grams;
     uint16_t ms16 = (ms_per_g > 0xFFFF) ? 0xFFFF : (uint16_t)ms_per_g;
     if (ms16 < 100) {
-        ms16 = 100;     /* sanity floor (feeder NACKs below this) */
+        ms16 = 100; /* sanity floor (feeder NACKs below this) */
     }
     model_set_cfg(ms16, g_app.default_portion_g);
     if (g_app.paired) {
@@ -333,16 +318,14 @@ static void on_cal_weigh_save(lv_event_t *e)
     ui_toast(buf, UI_TOAST_OK);
 }
 
-static void on_cal_weigh_cancel(lv_event_t *e)
-{
+static void on_cal_weigh_cancel(lv_event_t *e) {
     (void)e;
     s_cal_state = CAL_IDLE;
     cal_close_modal();
     ui_settings_refresh();
 }
 
-void ui_settings_on_cal_feed_done(uint16_t portion_g, uint16_t actual_ms, uint8_t result)
-{
+void ui_settings_on_cal_feed_done(uint16_t portion_g, uint16_t actual_ms, uint8_t result) {
     (void)portion_g;
     if (s_cal_state != CAL_RUNNING) {
         return;
@@ -410,8 +393,7 @@ void ui_settings_on_cal_feed_done(uint16_t portion_g, uint16_t actual_ms, uint8_
     lv_label_set_text(sl2, "Save");
 }
 
-static void on_cal_click(lv_event_t *e)
-{
+static void on_cal_click(lv_event_t *e) {
     (void)e;
     if (s_cal_state != CAL_IDLE) {
         return;
@@ -434,8 +416,7 @@ static void on_cal_click(lv_event_t *e)
 /* Build + refresh                                                     */
 /* ------------------------------------------------------------------ */
 
-void ui_settings_create(lv_obj_t *parent)
-{
+void ui_settings_create(lv_obj_t *parent) {
     /* This tab is taller than the content area — it scrolls. */
     lv_obj_add_flag(parent, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_scroll_dir(parent, LV_DIR_VER);
@@ -488,8 +469,7 @@ void ui_settings_create(lv_obj_t *parent)
     lv_label_set_text(tl, "Set time");
 
     /* ---- Feeding ---- */
-    lv_obj_t *card_feed = make_section(parent, "FEEDING",
-                                       SAQ_SP_LG + 2 * (SETTINGS_CARD_H + SAQ_SP_MD));
+    lv_obj_t *card_feed = make_section(parent, "FEEDING", SAQ_SP_LG + 2 * (SETTINGS_CARD_H + SAQ_SP_MD));
     s_lbl_cal_state = ui_make_label(card_feed, SAQ_FONT_BODY, SAQ_C_TEXT);
     lv_obj_align(s_lbl_cal_state, LV_ALIGN_TOP_LEFT, 0, SAQ_SP_MD + SAQ_SP_XS);
     s_btn_cal = ui_make_btn(card_feed, UI_BTN_PRIMARY);
@@ -501,14 +481,11 @@ void ui_settings_create(lv_obj_t *parent)
     lv_label_set_text(cal_l, "Calibrate");
 
     /* ---- Device ---- */
-    lv_obj_t *card_dev = make_section(parent, "DEVICE",
-                                      SAQ_SP_LG + 3 * (SETTINGS_CARD_H + SAQ_SP_MD));
+    lv_obj_t *card_dev = make_section(parent, "DEVICE", SAQ_SP_LG + 3 * (SETTINGS_CARD_H + SAQ_SP_MD));
     char dbuf[96];
-    snprintf(dbuf, sizeof(dbuf),
-             "HMI fw %d.%d  -  feeder fw %u.%u  -  protocol v%u.%u",
-             HMI_FW_MAJOR, HMI_FW_MINOR,
-             (unsigned)g_app.feeder_fw_major, (unsigned)g_app.feeder_fw_minor,
-             (unsigned)SAQ_PROTO_VERSION_MAJOR, (unsigned)SAQ_PROTO_VERSION_MINOR);
+    snprintf(dbuf, sizeof(dbuf), "HMI fw %d.%d  -  feeder fw %u.%u  -  protocol v%u.%u", HMI_FW_MAJOR, HMI_FW_MINOR,
+             (unsigned)g_app.feeder_fw_major, (unsigned)g_app.feeder_fw_minor, (unsigned)SAQ_PROTO_VERSION_MAJOR,
+             (unsigned)SAQ_PROTO_VERSION_MINOR);
     lv_obj_t *dl = ui_make_label(card_dev, SAQ_FONT_BODY, SAQ_C_TEXT);
     lv_obj_align(dl, LV_ALIGN_TOP_LEFT, 0, SAQ_SP_MD + SAQ_SP_XS);
     lv_label_set_text(dl, dbuf);
@@ -516,17 +493,19 @@ void ui_settings_create(lv_obj_t *parent)
     lv_obj_t *btn_diag = ui_make_btn(card_dev, UI_BTN_GHOST);
     lv_obj_set_size(btn_diag, 180, SAQ_BTN_H - SAQ_SP_SM);
     lv_obj_align(btn_diag, LV_ALIGN_RIGHT_MID, -SAQ_SP_SM, 0);
-    lv_obj_add_event_cb(btn_diag, [](lv_event_t *ev) {
-        (void)ev;
-        ui_show_overlay(ui_diagnostics_get());
-    }, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(
+        btn_diag,
+        [](lv_event_t *ev) {
+            (void)ev;
+            ui_show_overlay(ui_diagnostics_get());
+        },
+        LV_EVENT_CLICKED, NULL);
     lv_obj_t *dgl = ui_make_label(btn_diag, SAQ_FONT_BODY, SAQ_C_TEXT);
     lv_obj_center(dgl);
     lv_label_set_text(dgl, "Diagnostics");
 
     /* ---- About ---- */
-    lv_obj_t *card_about = make_section(parent, "ABOUT",
-                                        SAQ_SP_LG + 4 * (SETTINGS_CARD_H + SAQ_SP_MD));
+    lv_obj_t *card_about = make_section(parent, "ABOUT", SAQ_SP_LG + 4 * (SETTINGS_CARD_H + SAQ_SP_MD));
     lv_obj_t *al = ui_make_label(card_about, SAQ_FONT_BODY, SAQ_C_TEXT_MUTED);
     lv_obj_align(al, LV_ALIGN_TOP_LEFT, 0, SAQ_SP_MD + SAQ_SP_XS);
     lv_label_set_text(al, "SmartAqua — github.com/mlger/SmartAqua");
@@ -534,15 +513,14 @@ void ui_settings_create(lv_obj_t *parent)
     ui_settings_refresh();
 }
 
-void ui_settings_refresh(void)
-{
+void ui_settings_refresh(void) {
     if (g_app.paired) {
         char buf[48];
-        snprintf(buf, sizeof(buf), "Paired - feeder fw %u.%u",
-                 (unsigned)g_app.feeder_fw_major, (unsigned)g_app.feeder_fw_minor);
+        snprintf(buf, sizeof(buf), "Paired - feeder fw %u.%u", (unsigned)g_app.feeder_fw_major,
+                 (unsigned)g_app.feeder_fw_minor);
         lv_label_set_text(s_lbl_pair_state, buf);
-        snprintf(buf, sizeof(buf), "peer …%02X%02X",
-                 g_app.peer_mac[4], g_app.peer_mac[5]);   /* last 4 hex, not the whole thing */
+        snprintf(buf, sizeof(buf), "peer …%02X%02X", g_app.peer_mac[4],
+                 g_app.peer_mac[5]); /* last 4 hex, not the whole thing */
         lv_label_set_text(s_lbl_pair_mac, buf);
         lv_label_set_text(s_lbl_pair_btn, "Re-pair");
         lv_obj_clear_state(s_btn_pair, LV_STATE_DISABLED);
@@ -555,20 +533,23 @@ void ui_settings_refresh(void)
     char tbuf[64];
     if (g_app.clock_ok) {
         const uint32_t loc = model_local_epoch();
-        snprintf(tbuf, sizeof(tbuf), "Time source: RTC battery-backed, UTC%+d",
-                 (int)g_app.tz_h);
+        snprintf(tbuf, sizeof(tbuf), "Time source: RTC battery-backed, UTC%+d", (int)g_app.tz_h);
     } else {
         snprintf(tbuf, sizeof(tbuf), "Clock not set — unsynced warning is showing");
     }
     lv_label_set_text(s_lbl_time_state, tbuf);
 
     switch (s_cal_state) {
-    case CAL_RUNNING: lv_label_set_text(s_lbl_cal_state, "Running 20 s test feed…"); break;
-    case CAL_WEIGH:   lv_label_set_text(s_lbl_cal_state, "Weigh the food that came out"); break;
+    case CAL_RUNNING:
+        lv_label_set_text(s_lbl_cal_state, "Running 20 s test feed…");
+        break;
+    case CAL_WEIGH:
+        lv_label_set_text(s_lbl_cal_state, "Weigh the food that came out");
+        break;
     default: {
         char cbuf[64];
-        snprintf(cbuf, sizeof(cbuf), "Calibration: %u ms/g (default portion %u g)",
-                 (unsigned)g_app.ms_per_g, (unsigned)g_app.default_portion_g);
+        snprintf(cbuf, sizeof(cbuf), "Calibration: %u ms/g (default portion %u g)", (unsigned)g_app.ms_per_g,
+                 (unsigned)g_app.default_portion_g);
         lv_label_set_text(s_lbl_cal_state, cbuf);
         lv_obj_clear_state(s_btn_cal, LV_STATE_DISABLED);
         break;

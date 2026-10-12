@@ -18,41 +18,52 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stdbool.h>
 #include "saq_protocol.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
     HMI_LINK_EVT_NONE = 0,
-    HMI_LINK_EVT_ACK_OK,          /* pending command accepted */
-    HMI_LINK_EVT_NACK,            /* pending command refused; see .nack_reason */
-    HMI_LINK_EVT_TIMEOUT,         /* no ACK after 3 attempts — never report success */
-    HMI_LINK_EVT_STATUS,          /* fresh STATUS merged into the model */
-    HMI_LINK_EVT_FEED_DONE,       /* .feed_done fields */
-    HMI_LINK_EVT_LOG_ENTRY,       /* .log_entry fields (reconciliation) */
-    HMI_LINK_EVT_FAULT,           /* .fault fields */
-    HMI_LINK_EVT_BEACON,          /* .beacon fields + .from_mac (pairing candidate) */
+    HMI_LINK_EVT_ACK_OK,    /* pending command accepted */
+    HMI_LINK_EVT_NACK,      /* pending command refused; see .nack_reason */
+    HMI_LINK_EVT_TIMEOUT,   /* no ACK after 3 attempts — never report success */
+    HMI_LINK_EVT_STATUS,    /* fresh STATUS merged into the model */
+    HMI_LINK_EVT_FEED_DONE, /* .feed_done fields */
+    HMI_LINK_EVT_LOG_ENTRY, /* .log_entry fields (reconciliation) */
+    HMI_LINK_EVT_FAULT,     /* .fault fields */
+    HMI_LINK_EVT_BEACON,    /* .beacon fields + .from_mac (pairing candidate) */
     HMI_LINK_EVT_LINK_UP,
     HMI_LINK_EVT_LINK_DOWN,
-    HMI_LINK_EVT_PAIRED,          /* pairing completed */
+    HMI_LINK_EVT_PAIRED, /* pairing completed */
 } hmi_link_evt_type_t;
 
 typedef struct {
     hmi_link_evt_type_t type;
-    uint8_t  cmd_type;               /* for ACK/NACK/TIMEOUT: which command */
+    uint8_t cmd_type; /* for ACK/NACK/TIMEOUT: which command */
     uint32_t cmd_seq;
-    uint8_t  nack_reason;
-    uint8_t  from_mac[6];
+    uint8_t nack_reason;
+    uint8_t from_mac[6];
     union {
-        struct { uint16_t portion_g, actual_ms; uint8_t trigger, result; } feed_done;
-        struct { uint32_t log_seq, event_epoch; uint16_t portion_g, actual_ms; uint8_t trigger, result; } log_entry;
-        struct { uint16_t code, detail; } fault;
-        struct { uint8_t node_id, fw_major, fw_minor, hopper_pct; } beacon;
+        struct {
+            uint16_t portion_g, actual_ms;
+            uint8_t trigger, result;
+        } feed_done;
+        struct {
+            uint32_t log_seq, event_epoch;
+            uint16_t portion_g, actual_ms;
+            uint8_t trigger, result;
+        } log_entry;
+        struct {
+            uint16_t code, detail;
+        } fault;
+        struct {
+            uint8_t node_id, fw_major, fw_minor, hopper_pct;
+        } beacon;
     };
 } hmi_link_evt_t;
 
 bool link_init(void);
-void link_tick(void);              /* drive retries + freshness, call from loop() */
+void link_tick(void); /* drive retries + freshness, call from loop() */
 
 /* Returns true when an event was copied out. Drain in a loop. */
 bool link_poll(hmi_link_evt_t *evt);
@@ -61,7 +72,7 @@ bool link_poll(hmi_link_evt_t *evt);
 
 typedef enum {
     HMI_CMD_IDLE = 0,
-    HMI_CMD_WAIT_ACK,              /* frame sent, waiting / retrying */
+    HMI_CMD_WAIT_ACK, /* frame sent, waiting / retrying */
     HMI_CMD_DONE,
 } hmi_cmd_state_t;
 

@@ -18,33 +18,33 @@
 /* State                                                               */
 /* ------------------------------------------------------------------ */
 
-#define TXQ_DEPTH   12
-#define EVTQ_DEPTH  24
+#define TXQ_DEPTH  12
+#define EVTQ_DEPTH 24
 
 typedef struct {
-    uint8_t  buf[SAQ_FRAME_MAX];
+    uint8_t buf[SAQ_FRAME_MAX];
     uint16_t len;
     uint32_t seq;
-    uint8_t  type;
-    uint8_t  attempts;
+    uint8_t type;
+    uint8_t attempts;
     uint32_t next_try_ms;
 } tx_cmd_t;
 
-static tx_cmd_t       s_txq[TXQ_DEPTH];
-static uint8_t        s_txq_head = 0, s_txq_count = 0;
+static tx_cmd_t s_txq[TXQ_DEPTH];
+static uint8_t s_txq_head = 0, s_txq_count = 0;
 
-static QueueHandle_t  s_rxq = NULL;      /* raw frames from the WiFi task */
-static QueueHandle_t  s_evtq = NULL;     /* events for the UI loop */
+static QueueHandle_t s_rxq = NULL;  /* raw frames from the WiFi task */
+static QueueHandle_t s_evtq = NULL; /* events for the UI loop */
 
-static bool           s_peer_added = false;
-static uint8_t        s_peer_mac[6] = {0};
-static uint32_t       s_tx_seq = 0;
-static saq_dedupe_t   s_dedupe;          /* uplink dedupe (STATUS retries etc.) */
+static bool s_peer_added = false;
+static uint8_t s_peer_mac[6] = {0};
+static uint32_t s_tx_seq = 0;
+static saq_dedupe_t s_dedupe; /* uplink dedupe (STATUS retries etc.) */
 
-static bool           s_pair_armed = false;
-static uint32_t       s_pair_armed_ms = 0;
-static bool           s_link_up = false;
-static uint32_t       s_last_ack_ms = 0;
+static bool s_pair_armed = false;
+static uint32_t s_pair_armed_ms = 0;
+static bool s_link_up = false;
+static uint32_t s_last_ack_ms = 0;
 
 static uint32_t s_tx_frames = 0, s_tx_retries = 0;
 static uint32_t s_rx_frames = 0, s_rx_dups = 0, s_rx_foreign = 0;
@@ -58,8 +58,7 @@ typedef struct {
 /* Peers                                                               */
 /* ------------------------------------------------------------------ */
 
-static void peer_add(bool encrypted)
-{
+static void peer_add(bool encrypted) {
     if (s_peer_added) {
         esp_now_del_peer(s_peer_mac);
         s_peer_added = false;
@@ -80,8 +79,7 @@ static void peer_add(bool encrypted)
 /* Sending                                                             */
 /* ------------------------------------------------------------------ */
 
-static bool tx_push(const saq_frame_t *f)
-{
+static bool tx_push(const saq_frame_t *f) {
     if (s_txq_count >= TXQ_DEPTH) {
         return false;
     }
@@ -94,13 +92,12 @@ static bool tx_push(const saq_frame_t *f)
     s_txq[slot].seq = f->seq;
     s_txq[slot].type = f->type;
     s_txq[slot].attempts = 0;
-    s_txq[slot].next_try_ms = 0;      /* send on the next tick */
+    s_txq[slot].next_try_ms = 0; /* send on the next tick */
     s_txq_count++;
     return true;
 }
 
-static void evt_push(const hmi_link_evt_t *e)
-{
+static void evt_push(const hmi_link_evt_t *e) {
     if (s_evtq != NULL) {
         xQueueSend(s_evtq, e, 0);
     }
@@ -108,17 +105,16 @@ static void evt_push(const hmi_link_evt_t *e)
 
 /* Build-and-queue in one step: header + payload, then encode. The
  * per-call payload fields must be set BEFORE tx_push encodes the frame. */
-static bool cmd_begin(saq_frame_t *f, uint8_t type)
-{
+static bool cmd_begin(saq_frame_t *f, uint8_t type) {
     if (!g_app.paired) {
-        return false;                 /* nothing to talk to yet */
+        return false; /* nothing to talk to yet */
     }
     memset(f, 0, sizeof(*f));
     f->type = type;
     f->flags = SAQ_FLAG_ACK_REQUIRED;
     s_tx_seq++;
     f->seq = s_tx_seq;
-    f->epoch_s = model_epoch();     /* 0 when unsynced — informative */
+    f->epoch_s = model_epoch(); /* 0 when unsynced — informative */
     return true;
 }
 
@@ -126,8 +122,7 @@ static bool cmd_begin(saq_frame_t *f, uint8_t type)
 /* Receive callback — WiFi task context                                */
 /* ------------------------------------------------------------------ */
 
-static void on_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len)
-{
+static void on_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
     if ((info == NULL) || (data == NULL) || (len <= 0)) {
         return;
     }
@@ -169,10 +164,9 @@ static void on_recv(const esp_now_recv_info_t *info, const uint8_t *data, int le
 /* Frame handling — loop() context                                     */
 /* ------------------------------------------------------------------ */
 
-static void resolve_pending(uint32_t ack_seq, bool ok, uint8_t reason)
-{
+static void resolve_pending(uint32_t ack_seq, bool ok, uint8_t reason) {
     if ((s_txq_count == 0) || (s_txq[s_txq_head].seq != ack_seq)) {
-        return;                       /* late ACK for an already-resolved frame */
+        return; /* late ACK for an already-resolved frame */
     }
     const uint8_t cmd_type = s_txq[s_txq_head].type;
     hmi_link_evt_t e;
@@ -188,8 +182,7 @@ static void resolve_pending(uint32_t ack_seq, bool ok, uint8_t reason)
     s_last_ack_ms = millis();
 }
 
-static void handle_frame(const rx_item_t *it)
-{
+static void handle_frame(const rx_item_t *it) {
     const saq_frame_t *f = &it->f;
 
     switch (f->type) {
@@ -294,7 +287,7 @@ static void handle_frame(const rx_item_t *it)
     }
 
     default:
-        break;                         /* uplink types we do not use */
+        break; /* uplink types we do not use */
     }
 }
 
@@ -302,8 +295,7 @@ static void handle_frame(const rx_item_t *it)
 /* Public API                                                          */
 /* ------------------------------------------------------------------ */
 
-bool link_init(void)
-{
+bool link_init(void) {
     saq_dedupe_init(&s_dedupe);
 
     s_rxq = xQueueCreate(16, sizeof(rx_item_t));
@@ -324,30 +316,27 @@ bool link_init(void)
 
     if (g_app.paired) {
         memcpy(s_peer_mac, g_app.peer_mac, 6);
-        peer_add(true);                /* paired from NVS: encrypted from the start */
+        peer_add(true); /* paired from NVS: encrypted from the start */
     }
     return true;
 }
 
-void link_set_pair_armed(bool armed)
-{
+void link_set_pair_armed(bool armed) {
     s_pair_armed = armed;
     s_pair_armed_ms = millis();
 }
 
-bool link_pair_armed(void)
-{
+bool link_pair_armed(void) {
     if (s_pair_armed && ((uint32_t)(millis() - s_pair_armed_ms) > (SAQ_PAIR_WINDOW_S * 1000u))) {
-        s_pair_armed = false;          /* self-closing, like the feeder's window */
+        s_pair_armed = false; /* self-closing, like the feeder's window */
     }
     return s_pair_armed;
 }
 
-bool link_pair_to(const uint8_t mac[6])
-{
+bool link_pair_to(const uint8_t mac[6]) {
     memcpy(s_peer_mac, mac, 6);
-    peer_add(false);                   /* handshake foot: unencrypted */
-    s_pair_armed = true;               /* keep beacons flowing until done */
+    peer_add(false);     /* handshake foot: unencrypted */
+    s_pair_armed = true; /* keep beacons flowing until done */
 
     saq_frame_t f;
     memset(&f, 0, sizeof(f));
@@ -360,12 +349,11 @@ bool link_pair_to(const uint8_t mac[6])
     return tx_push(&f);
 }
 
-bool link_finish_pairing(const uint8_t mac[6])
-{
+bool link_finish_pairing(const uint8_t mac[6]) {
     memcpy(s_peer_mac, mac, 6);
-    peer_add(true);                    /* upgrade: family LMK from now on */
+    peer_add(true); /* upgrade: family LMK from now on */
     s_pair_armed = false;
-    model_save_peer(mac);              /* persists and sets g_app.paired */
+    model_save_peer(mac); /* persists and sets g_app.paired */
     s_link_up = false;
 
     /* Push the HMI's cached state, then reconcile history. Ordering is the
@@ -382,8 +370,7 @@ bool link_finish_pairing(const uint8_t mac[6])
     return true;
 }
 
-void link_unpair(void)
-{
+void link_unpair(void) {
     if (s_peer_added) {
         esp_now_del_peer(s_peer_mac);
         s_peer_added = false;
@@ -394,8 +381,7 @@ void link_unpair(void)
     /* The model keeps its history; only the peer identity is forgotten. */
 }
 
-void link_tick(void)
-{
+void link_tick(void) {
     /* 1. drain received frames first — a pending command's ACK may be
      *    sitting in the queue and must beat the retry timer. */
     if (s_rxq != NULL) {
@@ -451,8 +437,7 @@ void link_tick(void)
 
     /* 3. link freshness (docs/07: 3 missed STATUS intervals -> offline) */
     if (g_app.paired && s_link_up &&
-        ((uint32_t)(millis() - g_app.last_status_ms) >
-         (SAQ_STATUS_INTERVAL_S * 1000u * SAQ_LINK_LOST_INTERVALS))) {
+        ((uint32_t)(millis() - g_app.last_status_ms) > (SAQ_STATUS_INTERVAL_S * 1000u * SAQ_LINK_LOST_INTERVALS))) {
         s_link_up = false;
         hmi_link_evt_t e;
         memset(&e, 0, sizeof(e));
@@ -462,21 +447,18 @@ void link_tick(void)
     (void)link_pair_armed();
 }
 
-bool link_poll(hmi_link_evt_t *evt)
-{
+bool link_poll(hmi_link_evt_t *evt) {
     if ((s_evtq == NULL) || (evt == NULL)) {
         return false;
     }
     return xQueueReceive(s_evtq, evt, 0) == pdTRUE;
 }
 
-hmi_cmd_state_t link_cmd_state(void)
-{
+hmi_cmd_state_t link_cmd_state(void) {
     return (s_txq_count > 0) ? HMI_CMD_WAIT_ACK : HMI_CMD_IDLE;
 }
 
-bool link_send_feed(uint16_t portion_g, uint16_t forced_ms)
-{
+bool link_send_feed(uint16_t portion_g, uint16_t forced_ms) {
     saq_frame_t f;
     if (!cmd_begin(&f, SAQ_T_FEED)) {
         return false;
@@ -486,8 +468,7 @@ bool link_send_feed(uint16_t portion_g, uint16_t forced_ms)
     return tx_push(&f);
 }
 
-bool link_send_stop(void)
-{
+bool link_send_stop(void) {
     saq_frame_t f;
     if (!cmd_begin(&f, SAQ_T_STOP)) {
         return false;
@@ -495,8 +476,7 @@ bool link_send_stop(void)
     return tx_push(&f);
 }
 
-bool link_send_set_time(uint32_t utc_epoch, int32_t tz_s)
-{
+bool link_send_set_time(uint32_t utc_epoch, int32_t tz_s) {
     saq_frame_t f;
     if (!cmd_begin(&f, SAQ_T_SET_TIME)) {
         return false;
@@ -506,8 +486,7 @@ bool link_send_set_time(uint32_t utc_epoch, int32_t tz_s)
     return tx_push(&f);
 }
 
-bool link_send_sched_entry(uint8_t index, uint8_t count, const saq_sched_entry_t *entry)
-{
+bool link_send_sched_entry(uint8_t index, uint8_t count, const saq_sched_entry_t *entry) {
     saq_frame_t f;
     if (!cmd_begin(&f, SAQ_T_SET_SCHEDULE_ENTRY)) {
         return false;
@@ -520,8 +499,7 @@ bool link_send_sched_entry(uint8_t index, uint8_t count, const saq_sched_entry_t
     return tx_push(&f);
 }
 
-bool link_send_status_req(uint32_t since_seq)
-{
+bool link_send_status_req(uint32_t since_seq) {
     saq_frame_t f;
     if (!cmd_begin(&f, SAQ_T_STATUS_REQ)) {
         return false;
@@ -530,8 +508,7 @@ bool link_send_status_req(uint32_t since_seq)
     return tx_push(&f);
 }
 
-bool link_send_set_config(uint16_t ms_per_g, uint16_t default_portion_g)
-{
+bool link_send_set_config(uint16_t ms_per_g, uint16_t default_portion_g) {
     saq_frame_t f;
     if (!cmd_begin(&f, SAQ_T_SET_CONFIG)) {
         return false;
@@ -541,9 +518,21 @@ bool link_send_set_config(uint16_t ms_per_g, uint16_t default_portion_g)
     return tx_push(&f);
 }
 
-uint32_t link_tx_frames(void)      { return s_tx_frames; }
-uint32_t link_tx_retries(void)     { return s_tx_retries; }
-uint32_t link_rx_frames(void)      { return s_rx_frames; }
-uint32_t link_rx_dups(void)        { return s_rx_dups; }
-uint32_t link_rx_foreign(void)     { return s_rx_foreign; }
-uint32_t link_last_ack_age_ms(void) { return (s_last_ack_ms == 0) ? 0 : (millis() - s_last_ack_ms); }
+uint32_t link_tx_frames(void) {
+    return s_tx_frames;
+}
+uint32_t link_tx_retries(void) {
+    return s_tx_retries;
+}
+uint32_t link_rx_frames(void) {
+    return s_rx_frames;
+}
+uint32_t link_rx_dups(void) {
+    return s_rx_dups;
+}
+uint32_t link_rx_foreign(void) {
+    return s_rx_foreign;
+}
+uint32_t link_last_ack_age_ms(void) {
+    return (s_last_ack_ms == 0) ? 0 : (millis() - s_last_ack_ms);
+}

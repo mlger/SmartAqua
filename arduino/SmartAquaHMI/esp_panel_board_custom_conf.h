@@ -20,15 +20,15 @@
 
 #pragma once
 
-#define ESP_PANEL_USE_1024_600_LCD           (0)     // 0: 800x480, 1: 1024x600
-#define ESP_OPEN_TOUCH 1 // 1 initiates the touch, 0 closes the touch.
+#define ESP_PANEL_USE_1024_600_LCD (0) // 0: 800x480, 1: 1024x600
+#define ESP_OPEN_TOUCH             1   // 1 initiates the touch, 0 closes the touch.
 
 /**
  * @brief Flag to enable custom board configuration (0/1)
  *
  * Set to `1` to enable custom board configuration, `0` to disable
  */
-#define ESP_PANEL_BOARD_DEFAULT_USE_CUSTOM  (1)
+#define ESP_PANEL_BOARD_DEFAULT_USE_CUSTOM (1)
 
 #if ESP_PANEL_BOARD_DEFAULT_USE_CUSTOM
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,22 +38,22 @@
  * @brief Board name (format: "Manufacturer:Model")
  */
 #if ESP_PANEL_USE_1024_600_LCD
-    #define ESP_PANEL_BOARD_NAME                "Waveshare:ESP32-S3-Touch-LCD-5B"
+#define ESP_PANEL_BOARD_NAME "Waveshare:ESP32-S3-Touch-LCD-5B"
 #else
-    #define ESP_PANEL_BOARD_NAME                "Waveshare:ESP32-S3-Touch-LCD-4.3B"
+#define ESP_PANEL_BOARD_NAME "Waveshare:ESP32-S3-Touch-LCD-4.3B"
 #endif
 
 /**
  * @brief Panel resolution configuration in pixels
  */
 #if ESP_PANEL_USE_1024_600_LCD
-    /* LCD resolution in pixels */
-    #define ESP_PANEL_BOARD_WIDTH         (1024)
-    #define ESP_PANEL_BOARD_HEIGHT        (600)
+/* LCD resolution in pixels */
+#define ESP_PANEL_BOARD_WIDTH  (1024)
+#define ESP_PANEL_BOARD_HEIGHT (600)
 #else
-  /* LCD resolution in pixels */
-    #define ESP_PANEL_BOARD_WIDTH         (800)
-    #define ESP_PANEL_BOARD_HEIGHT        (480)
+/* LCD resolution in pixels */
+#define ESP_PANEL_BOARD_WIDTH  (800)
+#define ESP_PANEL_BOARD_HEIGHT (480)
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,18 +64,18 @@
  *
  * Set to `1` to enable LCD panel support, `0` to disable
  */
-#define ESP_PANEL_BOARD_USE_LCD             (1)
+#define ESP_PANEL_BOARD_USE_LCD (1)
 
 #if ESP_PANEL_BOARD_USE_LCD
 /**
  * @brief LCD controller selection
  */
-#define ESP_PANEL_BOARD_LCD_CONTROLLER      ST7262
+#define ESP_PANEL_BOARD_LCD_CONTROLLER ST7262
 
 /**
  * @brief LCD bus type selection
  */
-#define ESP_PANEL_BOARD_LCD_BUS_TYPE        (ESP_PANEL_BUS_TYPE_RGB)
+#define ESP_PANEL_BOARD_LCD_BUS_TYPE (ESP_PANEL_BUS_TYPE_RGB)
 
 
 /**
@@ -88,104 +88,109 @@
  */
 #if ESP_PANEL_BOARD_LCD_BUS_TYPE == ESP_PANEL_BUS_TYPE_RGB
 
-    /**
-     * @brief RGB bus
-     */
-    /**
-     * Set to 0 if using simple "RGB" interface which does not contain "3-wire SPI" interface.
-     */
-    #define ESP_PANEL_BOARD_LCD_RGB_USE_CONTROL_PANEL       (0) // 0/1. Typically set to 1
+/**
+ * @brief RGB bus
+ */
+/**
+ * Set to 0 if using simple "RGB" interface which does not contain "3-wire SPI" interface.
+ */
+#define ESP_PANEL_BOARD_LCD_RGB_USE_CONTROL_PANEL (0) // 0/1. Typically set to 1
 
-    /* For refresh panel (RGB) */
+/* For refresh panel (RGB) */
 #if ESP_PANEL_USE_1024_600_LCD
-    #define ESP_PANEL_BOARD_LCD_RGB_CLK_HZ            (21 * 1000 * 1000)
-    #define ESP_PANEL_BOARD_LCD_RGB_HPW               (30)
-    #define ESP_PANEL_BOARD_LCD_RGB_HBP               (145)
-    #define ESP_PANEL_BOARD_LCD_RGB_HFP               (170)
-    #define ESP_PANEL_BOARD_LCD_RGB_VPW               (2)
-    #define ESP_PANEL_BOARD_LCD_RGB_VBP               (23)
-    #define ESP_PANEL_BOARD_LCD_RGB_VFP               (12)
+#define ESP_PANEL_BOARD_LCD_RGB_CLK_HZ (21 * 1000 * 1000)
+#define ESP_PANEL_BOARD_LCD_RGB_HPW    (30)
+#define ESP_PANEL_BOARD_LCD_RGB_HBP    (145)
+#define ESP_PANEL_BOARD_LCD_RGB_HFP    (170)
+#define ESP_PANEL_BOARD_LCD_RGB_VPW    (2)
+#define ESP_PANEL_BOARD_LCD_RGB_VBP    (23)
+#define ESP_PANEL_BOARD_LCD_RGB_VFP    (12)
 #else
-    #define ESP_PANEL_BOARD_LCD_RGB_CLK_HZ            (16 * 1000 * 1000)
-    #define ESP_PANEL_BOARD_LCD_RGB_HPW               (4)
-    #define ESP_PANEL_BOARD_LCD_RGB_HBP               (8)
-    #define ESP_PANEL_BOARD_LCD_RGB_HFP               (8)
-    #define ESP_PANEL_BOARD_LCD_RGB_VPW               (4)
-    #define ESP_PANEL_BOARD_LCD_RGB_VBP               (16)
-    #define ESP_PANEL_BOARD_LCD_RGB_VFP               (16)
+#define ESP_PANEL_BOARD_LCD_RGB_CLK_HZ (16 * 1000 * 1000)
+#define ESP_PANEL_BOARD_LCD_RGB_HPW    (4)
+#define ESP_PANEL_BOARD_LCD_RGB_HBP    (8)
+#define ESP_PANEL_BOARD_LCD_RGB_HFP    (8)
+#define ESP_PANEL_BOARD_LCD_RGB_VPW    (4)
+#define ESP_PANEL_BOARD_LCD_RGB_VBP    (16)
+#define ESP_PANEL_BOARD_LCD_RGB_VFP    (16)
 #endif
 
-    #define ESP_PANEL_BOARD_LCD_RGB_PCLK_ACTIVE_NEG (1)     // 0: rising edge, 1: falling edge. Typically set to 0
-                                                                                        // The following sheet shows the valid combinations of
-                                                                                        // data width and pixel bits:
-                                                                                        // ┏---------------------------------┳- -------------------------------┓
-    #define ESP_PANEL_BOARD_LCD_RGB_DATA_WIDTH      (16)                                // |                16               |               8                 |
-    #define ESP_PANEL_BOARD_LCD_RGB_PIXEL_BITS      (ESP_PANEL_LCD_COLOR_BITS_RGB565)   // | ESP_PANEL_LCD_COLOR_BITS_RGB565 | ESP_PANEL_LCD_COLOR_BITS_RGB888 |
-                                                                                        // ┗---------------------------------┻---------------------------------┛
-                                                            // To understand color format of RGB LCD, see: https://docs.espressif.com/projects/esp-iot-solution/en/latest/display/lcd/rgb_lcd.html#color-formats
-    #define ESP_PANEL_BOARD_LCD_RGB_BOUNCE_BUF_SIZE (ESP_PANEL_BOARD_WIDTH * 10)
-                                                            // Bounce buffer size in bytes. It is used to avoid screen drift
-                                                            // for ESP32-S3. Typically set to `ESP_PANEL_BOARD_WIDTH * 10`
-                                                            // The size should satisfy `size * N = LCD_width * LCD_height`,
-                                                            // where N is an even number.
-                                                            // For more details, see: https://github.com/esp-arduino-libs/ESP32_Display_Panel/blob/master/docs/FAQ.md#how-to-fix-screen-drift-issue-when-driving-rgb-lcd-with-esp32-s3
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_HSYNC        (46)
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_VSYNC        (3)
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DE           (5)    // -1 if not used
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_PCLK         (7)
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DISP         (-1)    // -1 if not used. Typically set to -1
+#define ESP_PANEL_BOARD_LCD_RGB_PCLK_ACTIVE_NEG                                                                        \
+    (1) // 0: rising edge, 1: falling edge. Typically set to 0
+        // The following sheet shows the valid combinations of
+        // data width and pixel bits:
+        // ┏---------------------------------┳- -------------------------------┓
+#define ESP_PANEL_BOARD_LCD_RGB_DATA_WIDTH (16) // |                16               |               8                 |
+#define ESP_PANEL_BOARD_LCD_RGB_PIXEL_BITS                                                                             \
+    (ESP_PANEL_LCD_COLOR_BITS_RGB565) // | ESP_PANEL_LCD_COLOR_BITS_RGB565 | ESP_PANEL_LCD_COLOR_BITS_RGB888 |
+                                      // ┗---------------------------------┻---------------------------------┛
+                                      // To understand color format of RGB LCD, see:
+// https://docs.espressif.com/projects/esp-iot-solution/en/latest/display/lcd/rgb_lcd.html#color-formats
+#define ESP_PANEL_BOARD_LCD_RGB_BOUNCE_BUF_SIZE (ESP_PANEL_BOARD_WIDTH * 10)
+// Bounce buffer size in bytes. It is used to avoid screen drift
+// for ESP32-S3. Typically set to `ESP_PANEL_BOARD_WIDTH * 10`
+// The size should satisfy `size * N = LCD_width * LCD_height`,
+// where N is an even number.
+// For more details, see:
+// https://github.com/esp-arduino-libs/ESP32_Display_Panel/blob/master/docs/FAQ.md#how-to-fix-screen-drift-issue-when-driving-rgb-lcd-with-esp32-s3
+#define ESP_PANEL_BOARD_LCD_RGB_IO_HSYNC (46)
+#define ESP_PANEL_BOARD_LCD_RGB_IO_VSYNC (3)
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DE    (5) // -1 if not used
+#define ESP_PANEL_BOARD_LCD_RGB_IO_PCLK  (7)
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DISP  (-1) // -1 if not used. Typically set to -1
 
-                                                            // The following sheet shows the mapping of ESP GPIOs to
-                                                            // LCD data pins with different data width and color format:
-                                                            // ┏------┳- ------------┳--------------------------┓
-                                                            // | ESP: | 8-bit RGB888 |      16-bit RGB565       |
-                                                            // |------|--------------|--------------------------|
-                                                            // | LCD: |    RGB888    | RGB565 | RGB666 | RGB888 |
-                                                            // ┗------|--------------|--------|--------|--------|
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA0        (14)    //        |      D0      |   B0   |  B0-1  |   B0-3 |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA1        (38)    //        |      D1      |   B1   |  B2    |   B4   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA2        (18)    //        |      D2      |   B2   |  B3    |   B5   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA3        (17)    //        |      D3      |   B3   |  B4    |   B6   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA4        (10)    //        |      D4      |   B4   |  B5    |   B7   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA5        (39)    //        |      D5      |   G0   |  G0    |   G0-2 |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA6        (0)     //        |      D6      |   G1   |  G1    |   G3   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA7        (45)    //        |      D7      |   G2   |  G2    |   G4   |
-#if ESP_PANEL_BOARD_LCD_RGB_DATA_WIDTH > 8                  //        ┗--------------┫--------|--------|--------|
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA8        (48)    //                       |   G3   |  G3    |   G5   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA9        (47)    //                       |   G4   |  G4    |   G6   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA10       (21)    //                       |   G5   |  G5    |   G7   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA11       (1)     //                       |   R0   |  R0-1  |   R0-3 |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA12       (2)     //                       |   R1   |  R2    |   R4   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA13       (42)    //                       |   R2   |  R3    |   R5   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA14       (41)    //                       |   R3   |  R4    |   R6   |
-    #define ESP_PANEL_BOARD_LCD_RGB_IO_DATA15       (40)    //                       |   R4   |  R5    |   R7   |
-                                                            //                       ┗--------┻--------┻--------┛
-#endif // ESP_PANEL_BOARD_LCD_RGB_DATA_WIDTH
+// The following sheet shows the mapping of ESP GPIOs to
+// LCD data pins with different data width and color format:
+// ┏------┳- ------------┳--------------------------┓
+// | ESP: | 8-bit RGB888 |      16-bit RGB565       |
+// |------|--------------|--------------------------|
+// | LCD: |    RGB888    | RGB565 | RGB666 | RGB888 |
+// ┗------|--------------|--------|--------|--------|
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA0 (14)  //        |      D0      |   B0   |  B0-1  |   B0-3 |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA1 (38)  //        |      D1      |   B1   |  B2    |   B4   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA2 (18)  //        |      D2      |   B2   |  B3    |   B5   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA3 (17)  //        |      D3      |   B3   |  B4    |   B6   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA4 (10)  //        |      D4      |   B4   |  B5    |   B7   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA5 (39)  //        |      D5      |   G0   |  G0    |   G0-2 |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA6 (0)   //        |      D6      |   G1   |  G1    |   G3   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA7 (45)  //        |      D7      |   G2   |  G2    |   G4   |
+#if ESP_PANEL_BOARD_LCD_RGB_DATA_WIDTH > 8     //        ┗--------------┫--------|--------|--------|
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA8  (48) //                       |   G3   |  G3    |   G5   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA9  (47) //                       |   G4   |  G4    |   G6   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA10 (21) //                       |   G5   |  G5    |   G7   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA11 (1)  //                       |   R0   |  R0-1  |   R0-3 |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA12 (2)  //                       |   R1   |  R2    |   R4   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA13 (42) //                       |   R2   |  R3    |   R5   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA14 (41) //                       |   R3   |  R4    |   R6   |
+#define ESP_PANEL_BOARD_LCD_RGB_IO_DATA15                                                                              \
+    (40) //                       |   R4   |  R5    |   R7   |
+         //                       ┗--------┻--------┻--------┛
+#endif   // ESP_PANEL_BOARD_LCD_RGB_DATA_WIDTH
 
 #endif // ESP_PANEL_BOARD_LCD_BUS_TYPE
 
 /**
  * @brief LCD color configuration
  */
-#define ESP_PANEL_BOARD_LCD_COLOR_BITS          (ESP_PANEL_LCD_COLOR_BITS_RGB565)
-                                                        // ESP_PANEL_LCD_COLOR_BITS_RGB565/RGB666/RGB888
-#define ESP_PANEL_BOARD_LCD_COLOR_BGR_ORDER     (0)     // 0: RGB, 1: BGR
-#define ESP_PANEL_BOARD_LCD_COLOR_INEVRT_BIT    (0)     // 0/1
+#define ESP_PANEL_BOARD_LCD_COLOR_BITS (ESP_PANEL_LCD_COLOR_BITS_RGB565)
+// ESP_PANEL_LCD_COLOR_BITS_RGB565/RGB666/RGB888
+#define ESP_PANEL_BOARD_LCD_COLOR_BGR_ORDER  (0) // 0: RGB, 1: BGR
+#define ESP_PANEL_BOARD_LCD_COLOR_INEVRT_BIT (0) // 0/1
 
 /**
  * @brief LCD transformation configuration
  */
-#define ESP_PANEL_BOARD_LCD_SWAP_XY             (0)     // 0/1
-#define ESP_PANEL_BOARD_LCD_MIRROR_X            (0)     // 0/1
-#define ESP_PANEL_BOARD_LCD_MIRROR_Y            (0)     // 0/1
-#define ESP_PANEL_BOARD_LCD_GAP_X               (0)     // [0, ESP_PANEL_BOARD_WIDTH]
-#define ESP_PANEL_BOARD_LCD_GAP_Y               (0)     // [0, ESP_PANEL_BOARD_HEIGHT]
+#define ESP_PANEL_BOARD_LCD_SWAP_XY  (0) // 0/1
+#define ESP_PANEL_BOARD_LCD_MIRROR_X (0) // 0/1
+#define ESP_PANEL_BOARD_LCD_MIRROR_Y (0) // 0/1
+#define ESP_PANEL_BOARD_LCD_GAP_X    (0) // [0, ESP_PANEL_BOARD_WIDTH]
+#define ESP_PANEL_BOARD_LCD_GAP_Y    (0) // [0, ESP_PANEL_BOARD_HEIGHT]
 
 /**
  * @brief LCD reset pin configuration
  */
-#define ESP_PANEL_BOARD_LCD_RST_IO              (-1)    // Reset pin, -1 if not used
-#define ESP_PANEL_BOARD_LCD_RST_LEVEL           (0)     // Reset active level, 0: low, 1: high
+#define ESP_PANEL_BOARD_LCD_RST_IO    (-1) // Reset pin, -1 if not used
+#define ESP_PANEL_BOARD_LCD_RST_LEVEL (0)  // Reset active level, 0: low, 1: high
 
 #endif // ESP_PANEL_BOARD_USE_LCD
 
@@ -197,13 +202,13 @@
  *
  * Set to `1` to enable touch panel support, `0` to disable
  */
-#define ESP_PANEL_BOARD_USE_TOUCH               (ESP_OPEN_TOUCH)
+#define ESP_PANEL_BOARD_USE_TOUCH (ESP_OPEN_TOUCH)
 
 #if ESP_PANEL_BOARD_USE_TOUCH
 /**
  * @brief Touch controller selection
  */
-#define ESP_PANEL_BOARD_TOUCH_CONTROLLER        GT911
+#define ESP_PANEL_BOARD_TOUCH_CONTROLLER GT911
 
 /**
  * @brief Touch bus type selection
@@ -212,9 +217,9 @@
  * - `ESP_PANEL_BUS_TYPE_I2C`
  * - `ESP_PANEL_BUS_TYPE_SPI`
  */
-#define ESP_PANEL_BOARD_TOUCH_BUS_TYPE          (ESP_PANEL_BUS_TYPE_I2C)
+#define ESP_PANEL_BOARD_TOUCH_BUS_TYPE (ESP_PANEL_BUS_TYPE_I2C)
 
-#if (ESP_PANEL_BOARD_TOUCH_BUS_TYPE == ESP_PANEL_BUS_TYPE_I2C) || \
+#if (ESP_PANEL_BOARD_TOUCH_BUS_TYPE == ESP_PANEL_BUS_TYPE_I2C) ||                                                      \
     (ESP_PANEL_BOARD_TOUCH_BUS_TYPE == ESP_PANEL_BUS_TYPE_SPI)
 /**
  * If set to 1, the bus will skip to initialize the corresponding host. Users need to initialize the host in advance.
@@ -223,7 +228,7 @@
  * So it is not necessary to set the macro to `1`. For other drivers (like `Wire`), please set the macro to `1`
  * ensure that the host is initialized only once.
  */
-#define ESP_PANEL_BOARD_TOUCH_BUS_SKIP_INIT_HOST        (0)     // 0/1. Typically set to 0
+#define ESP_PANEL_BOARD_TOUCH_BUS_SKIP_INIT_HOST (0) // 0/1. Typically set to 0
 #endif
 
 /**
@@ -231,43 +236,44 @@
  */
 #if ESP_PANEL_BOARD_TOUCH_BUS_TYPE == ESP_PANEL_BUS_TYPE_I2C
 
-    /**
-     * @brief I2C bus
-     */
-    /* For general */
-    #define ESP_PANEL_BOARD_TOUCH_I2C_HOST_ID           (0)     // Typically set to 0
+/**
+ * @brief I2C bus
+ */
+/* For general */
+#define ESP_PANEL_BOARD_TOUCH_I2C_HOST_ID (0) // Typically set to 0
 #if !ESP_PANEL_BOARD_TOUCH_BUS_SKIP_INIT_HOST
-    /* For host */
-    #define ESP_PANEL_BOARD_TOUCH_I2C_CLK_HZ            (400 * 1000)
-                                                                // Typically set to 400K
-    #define ESP_PANEL_BOARD_TOUCH_I2C_SCL_PULLUP        (1)     // 0/1. Typically set to 1
-    #define ESP_PANEL_BOARD_TOUCH_I2C_SDA_PULLUP        (1)     // 0/1. Typically set to 1
-    #define ESP_PANEL_BOARD_TOUCH_I2C_IO_SCL            (9)
-    #define ESP_PANEL_BOARD_TOUCH_I2C_IO_SDA            (8)
+/* For host */
+#define ESP_PANEL_BOARD_TOUCH_I2C_CLK_HZ (400 * 1000)
+// Typically set to 400K
+#define ESP_PANEL_BOARD_TOUCH_I2C_SCL_PULLUP (1) // 0/1. Typically set to 1
+#define ESP_PANEL_BOARD_TOUCH_I2C_SDA_PULLUP (1) // 0/1. Typically set to 1
+#define ESP_PANEL_BOARD_TOUCH_I2C_IO_SCL     (9)
+#define ESP_PANEL_BOARD_TOUCH_I2C_IO_SDA     (8)
 #endif
-    /* For panel */
-    #define ESP_PANEL_BOARD_TOUCH_I2C_ADDRESS           (0)     // Typically set to 0 to use the default address.
-                                                                // - For touchs with only one address, set to 0
-                                                                // - For touchs with multiple addresses, set to 0 or
-                                                                //   the address. Like GT911, there are two addresses:
-                                                                //   0x5D(default) and 0x14
+/* For panel */
+#define ESP_PANEL_BOARD_TOUCH_I2C_ADDRESS                                                                              \
+    (0) // Typically set to 0 to use the default address.
+        // - For touchs with only one address, set to 0
+        // - For touchs with multiple addresses, set to 0 or
+        //   the address. Like GT911, there are two addresses:
+        //   0x5D(default) and 0x14
 
 #endif // ESP_PANEL_BOARD_TOUCH_BUS_TYPE
 
 /**
  * @brief Touch panel transformation flags
  */
-#define ESP_PANEL_BOARD_TOUCH_SWAP_XY           (0)     // 0/1
-#define ESP_PANEL_BOARD_TOUCH_MIRROR_X          (0)     // 0/1
-#define ESP_PANEL_BOARD_TOUCH_MIRROR_Y          (0)     // 0/1
+#define ESP_PANEL_BOARD_TOUCH_SWAP_XY  (0) // 0/1
+#define ESP_PANEL_BOARD_TOUCH_MIRROR_X (0) // 0/1
+#define ESP_PANEL_BOARD_TOUCH_MIRROR_Y (0) // 0/1
 
 /**
  * @brief Touch panel control pins
  */
-#define ESP_PANEL_BOARD_TOUCH_RST_IO            (-1)    // Reset pin, -1 if not used
-#define ESP_PANEL_BOARD_TOUCH_RST_LEVEL         (0)     // Reset active level, 0: low, 1: high
-#define ESP_PANEL_BOARD_TOUCH_INT_IO            (4)    // Interrupt pin, -1 if not used
-#define ESP_PANEL_BOARD_TOUCH_INT_LEVEL         (0)     // Interrupt active level, 0: low, 1: high
+#define ESP_PANEL_BOARD_TOUCH_RST_IO    (-1) // Reset pin, -1 if not used
+#define ESP_PANEL_BOARD_TOUCH_RST_LEVEL (0)  // Reset active level, 0: low, 1: high
+#define ESP_PANEL_BOARD_TOUCH_INT_IO    (4)  // Interrupt pin, -1 if not used
+#define ESP_PANEL_BOARD_TOUCH_INT_LEVEL (0)  // Interrupt active level, 0: low, 1: high
 
 #endif // ESP_PANEL_BOARD_USE_TOUCH
 
@@ -279,7 +285,7 @@
  *
  * Set to `1` to enable backlight support, `0` to disable
  */
-#define ESP_PANEL_BOARD_USE_BACKLIGHT           (1)
+#define ESP_PANEL_BOARD_USE_BACKLIGHT (1)
 
 #if ESP_PANEL_BOARD_USE_BACKLIGHT
 /**
@@ -291,17 +297,17 @@
  * - `ESP_PANEL_BACKLIGHT_TYPE_PWM_LEDC`: Use LEDC PWM to control the backlight, support brightness adjustment
  * - `ESP_PANEL_BACKLIGHT_TYPE_CUSTOM`: Use custom function to control the backlight
  */
-#define ESP_PANEL_BOARD_BACKLIGHT_TYPE          (ESP_PANEL_BACKLIGHT_TYPE_SWITCH_EXPANDER)
+#define ESP_PANEL_BOARD_BACKLIGHT_TYPE (ESP_PANEL_BACKLIGHT_TYPE_SWITCH_EXPANDER)
 
-#if (ESP_PANEL_BOARD_BACKLIGHT_TYPE == ESP_PANEL_BACKLIGHT_TYPE_SWITCH_GPIO) || \
-    (ESP_PANEL_BOARD_BACKLIGHT_TYPE == ESP_PANEL_BACKLIGHT_TYPE_SWITCH_EXPANDER) || \
+#if (ESP_PANEL_BOARD_BACKLIGHT_TYPE == ESP_PANEL_BACKLIGHT_TYPE_SWITCH_GPIO) ||                                        \
+    (ESP_PANEL_BOARD_BACKLIGHT_TYPE == ESP_PANEL_BACKLIGHT_TYPE_SWITCH_EXPANDER) ||                                    \
     (ESP_PANEL_BOARD_BACKLIGHT_TYPE == ESP_PANEL_BACKLIGHT_TYPE_PWM_LEDC)
 
-    /**
-     * @brief Backlight control pin configuration
-     */
-    #define ESP_PANEL_BOARD_BACKLIGHT_IO        (2)    // Output GPIO pin number
-    #define ESP_PANEL_BOARD_BACKLIGHT_ON_LEVEL  (1)     // Active level, 0: low, 1: high
+/**
+ * @brief Backlight control pin configuration
+ */
+#define ESP_PANEL_BOARD_BACKLIGHT_IO       (2) // Output GPIO pin number
+#define ESP_PANEL_BOARD_BACKLIGHT_ON_LEVEL (1) // Active level, 0: low, 1: high
 
 #endif // ESP_PANEL_BOARD_BACKLIGHT_TYPE
 
@@ -310,7 +316,7 @@
  *
  * Set to 1 if want to turn off the backlight after initializing. Otherwise, the backlight will be on.
  */
-#define ESP_PANEL_BOARD_BACKLIGHT_IDLE_OFF      (0)
+#define ESP_PANEL_BOARD_BACKLIGHT_IDLE_OFF (0)
 
 #endif // ESP_PANEL_BOARD_USE_BACKLIGHT
 
@@ -322,13 +328,13 @@
  *
  * Set to `1` to enable IO expander support, `0` to disable
  */
-#define ESP_PANEL_BOARD_USE_EXPANDER            (1)
+#define ESP_PANEL_BOARD_USE_EXPANDER (1)
 
 #if ESP_PANEL_BOARD_USE_EXPANDER
 /**
  * @brief IO expander chip selection
  */
-#define ESP_PANEL_BOARD_EXPANDER_CHIP           CH422G
+#define ESP_PANEL_BOARD_EXPANDER_CHIP CH422G
 
 /**
  * @brief IO expander I2C bus parameters configuration
@@ -340,23 +346,24 @@
  * So it is not necessary to set the macro to `1`. For other devices, please set the macro to `1` ensure that the
  * host is initialized only once.
  */
-#define ESP_PANEL_BOARD_EXPANDER_SKIP_INIT_HOST     (0)     // 0/1
+#define ESP_PANEL_BOARD_EXPANDER_SKIP_INIT_HOST (0) // 0/1
 /* For general */
-#define ESP_PANEL_BOARD_EXPANDER_I2C_HOST_ID        (0)     // Typically set to 0
+#define ESP_PANEL_BOARD_EXPANDER_I2C_HOST_ID (0) // Typically set to 0
 /* For host */
 #if !ESP_PANEL_BOARD_EXPANDER_SKIP_INIT_HOST
-#define ESP_PANEL_BOARD_EXPANDER_I2C_CLK_HZ         (400 * 1000)
-                                                            // Typically set to 400K
-#define ESP_PANEL_BOARD_EXPANDER_I2C_SCL_PULLUP     (1)     // 0/1. Typically set to 1
-#define ESP_PANEL_BOARD_EXPANDER_I2C_SDA_PULLUP     (1)     // 0/1. Typically set to 1
-#define ESP_PANEL_BOARD_EXPANDER_I2C_IO_SCL         (9)
-#define ESP_PANEL_BOARD_EXPANDER_I2C_IO_SDA         (8)
+#define ESP_PANEL_BOARD_EXPANDER_I2C_CLK_HZ (400 * 1000)
+// Typically set to 400K
+#define ESP_PANEL_BOARD_EXPANDER_I2C_SCL_PULLUP (1) // 0/1. Typically set to 1
+#define ESP_PANEL_BOARD_EXPANDER_I2C_SDA_PULLUP (1) // 0/1. Typically set to 1
+#define ESP_PANEL_BOARD_EXPANDER_I2C_IO_SCL     (9)
+#define ESP_PANEL_BOARD_EXPANDER_I2C_IO_SDA     (8)
 #endif // ESP_PANEL_BOARD_EXPANDER_SKIP_INIT_HOST
 /* For device */
-#define ESP_PANEL_BOARD_EXPANDER_I2C_ADDRESS        (0x20)  // The actual I2C address. Even for the same model of IC,
-                                                            // the I2C address may be different, and confirmation based on
-                                                            // the actual hardware connection is required
-#endif // ESP_PANEL_BOARD_USE_EXPANDER
+#define ESP_PANEL_BOARD_EXPANDER_I2C_ADDRESS                                                                           \
+    (0x20) // The actual I2C address. Even for the same model of IC,
+           // the I2C address may be different, and confirmation based on
+           // the actual hardware connection is required
+#endif     // ESP_PANEL_BOARD_USE_EXPANDER
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////// Please utilize the following macros to execute any additional code if required /////////////////
@@ -367,12 +374,12 @@
  * @param[in] p Pointer to the board object
  * @return true on success, false on failure
  */
-#define ESP_PANEL_BOARD_EXPANDER_POST_BEGIN_FUNCTION(p) \
-    {  \
-        auto board = static_cast<Board *>(p);  \
-        auto expander = static_cast<esp_expander::CH422G*>(board->getIO_Expander()->getBase()); \
-        expander->enableAllIO_Output(); \
-        return true;    \
+#define ESP_PANEL_BOARD_EXPANDER_POST_BEGIN_FUNCTION(p)                                                                \
+    {                                                                                                                  \
+        auto board = static_cast<Board *>(p);                                                                          \
+        auto expander = static_cast<esp_expander::CH422G *>(board->getIO_Expander()->getBase());                       \
+        expander->enableAllIO_Output();                                                                                \
+        return true;                                                                                                   \
     }
 
 /**
@@ -381,16 +388,16 @@
  * @param[in] p Pointer to the board object
  * @return true on success, false on failure
  */
-#define ESP_PANEL_BOARD_LCD_PRE_BEGIN_FUNCTION(p) \
-    {  \
-        constexpr int LCD_RST = 3; \
-        auto board = static_cast<Board *>(p);  \
-        auto expander = board->getIO_Expander()->getBase(); \
-        expander->digitalWrite(LCD_RST, 0); \
-        vTaskDelay(pdMS_TO_TICKS(10)); \
-        expander->digitalWrite(LCD_RST, 1); \
-        vTaskDelay(pdMS_TO_TICKS(100)); \
-        return true;    \
+#define ESP_PANEL_BOARD_LCD_PRE_BEGIN_FUNCTION(p)                                                                      \
+    {                                                                                                                  \
+        constexpr int LCD_RST = 3;                                                                                     \
+        auto board = static_cast<Board *>(p);                                                                          \
+        auto expander = board->getIO_Expander()->getBase();                                                            \
+        expander->digitalWrite(LCD_RST, 0);                                                                            \
+        vTaskDelay(pdMS_TO_TICKS(10));                                                                                 \
+        expander->digitalWrite(LCD_RST, 1);                                                                            \
+        vTaskDelay(pdMS_TO_TICKS(100));                                                                                \
+        return true;                                                                                                   \
     }
 
 #if ESP_PANEL_BOARD_USE_TOUCH
@@ -400,21 +407,21 @@
  * @param[in] p Pointer to the board object
  * @return true on success, false on failure
  */
-#define ESP_PANEL_BOARD_TOUCH_PRE_BEGIN_FUNCTION(p) \
-    {  \
-        constexpr gpio_num_t TP_INT = static_cast<gpio_num_t>(ESP_PANEL_BOARD_TOUCH_INT_IO); \
-        constexpr int TP_RST = 1; \
-        auto board = static_cast<Board *>(p);  \
-        auto expander = board->getIO_Expander()->getBase(); \
-        gpio_set_direction(TP_INT, GPIO_MODE_OUTPUT); \
-        gpio_set_level(TP_INT, 0); \
-        vTaskDelay(pdMS_TO_TICKS(10)); \
-        expander->digitalWrite(TP_RST, 0); \
-        vTaskDelay(pdMS_TO_TICKS(100)); \
-        expander->digitalWrite(TP_RST, 1); \
-        vTaskDelay(pdMS_TO_TICKS(200)); \
-        gpio_reset_pin(TP_INT); \
-        return true;    \
+#define ESP_PANEL_BOARD_TOUCH_PRE_BEGIN_FUNCTION(p)                                                                    \
+    {                                                                                                                  \
+        constexpr gpio_num_t TP_INT = static_cast<gpio_num_t>(ESP_PANEL_BOARD_TOUCH_INT_IO);                           \
+        constexpr int TP_RST = 1;                                                                                      \
+        auto board = static_cast<Board *>(p);                                                                          \
+        auto expander = board->getIO_Expander()->getBase();                                                            \
+        gpio_set_direction(TP_INT, GPIO_MODE_OUTPUT);                                                                  \
+        gpio_set_level(TP_INT, 0);                                                                                     \
+        vTaskDelay(pdMS_TO_TICKS(10));                                                                                 \
+        expander->digitalWrite(TP_RST, 0);                                                                             \
+        vTaskDelay(pdMS_TO_TICKS(100));                                                                                \
+        expander->digitalWrite(TP_RST, 1);                                                                             \
+        vTaskDelay(pdMS_TO_TICKS(200));                                                                                \
+        gpio_reset_pin(TP_INT);                                                                                        \
+        return true;                                                                                                   \
     }
 #endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -14,12 +14,12 @@
  */
 
 #include "ui_schedule.h"
-#include "ui_theme.h"
-#include "ui_chrome.h"
 #include "app_model.h"
 #include "saq_link.h"
-#include "saq_schedule.h"
 #include "saq_portion.h"
+#include "saq_schedule.h"
+#include "ui_chrome.h"
+#include "ui_theme.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -29,13 +29,13 @@ lv_obj_t *ui_history_get(void);
 lv_obj_t *ui_diagnostics_get(void);
 
 /* ---- list ---- */
-static lv_obj_t *s_list;             /* scroll container of rows */
+static lv_obj_t *s_list; /* scroll container of rows */
 static lv_obj_t *s_banner_offline;
 static lv_obj_t *s_lbl_empty;
 static lv_obj_t *s_btn_add;
 
 /* ---- editor overlay ---- */
-static lv_obj_t *s_editor;           /* overlay root (from ui_overlay_create) */
+static lv_obj_t *s_editor; /* overlay root (from ui_overlay_create) */
 static lv_obj_t *s_ed_hour;
 static lv_obj_t *s_ed_min;
 static lv_obj_t *s_ed_days[7];
@@ -44,10 +44,9 @@ static lv_obj_t *s_lbl_ed_portion;
 static lv_obj_t *s_lbl_ed_error;
 static lv_obj_t *s_btn_save;
 static lv_obj_t *s_btn_delete;
-static int8_t    s_edit_index = -1;  /* -1 = new entry */
+static int8_t s_edit_index = -1; /* -1 = new entry */
 
-static bool editable(void)
-{
+static bool editable(void) {
     return g_app.paired && g_app.link_up;
 }
 
@@ -57,8 +56,7 @@ static bool editable(void)
 
 static void rebuild_rows(void);
 
-static void on_row_click(lv_event_t *e)
-{
+static void on_row_click(lv_event_t *e) {
     if (!editable()) {
         return;
     }
@@ -66,8 +64,7 @@ static void on_row_click(lv_event_t *e)
     ui_editor_open();
 }
 
-static void on_add_click(lv_event_t *e)
-{
+static void on_add_click(lv_event_t *e) {
     (void)e;
     if (!editable()) {
         return;
@@ -80,8 +77,7 @@ static void on_add_click(lv_event_t *e)
 /* Editor: gather + validate + save                                    */
 /* ------------------------------------------------------------------ */
 
-static saq_sched_entry_t editor_collect(void)
-{
+static saq_sched_entry_t editor_collect(void) {
     saq_sched_entry_t e;
     memset(&e, 0, sizeof(e));
     e.hour = (uint8_t)lv_roller_get_selected(s_ed_hour);
@@ -97,8 +93,7 @@ static saq_sched_entry_t editor_collect(void)
     return e;
 }
 
-static void on_editor_save(lv_event_t *ev)
-{
+static void on_editor_save(lv_event_t *ev) {
     (void)ev;
     const saq_sched_entry_t entry = editor_collect();
 
@@ -113,8 +108,7 @@ static void on_editor_save(lv_event_t *ev)
     }
     /* Duplicate-time warning: legal, usually unintended — warn, don't block. */
     for (uint8_t i = 0; i < g_app.sched.count; i++) {
-        if ((i != (uint8_t)s_edit_index) &&
-            (g_app.sched.entries[i].hour == entry.hour) &&
+        if ((i != (uint8_t)s_edit_index) && (g_app.sched.entries[i].hour == entry.hour) &&
             (g_app.sched.entries[i].minute == entry.minute)) {
             lv_label_set_text(s_lbl_ed_error, "Note: another feed is at this time");
             /* fall through and save anyway */
@@ -151,8 +145,7 @@ static void on_editor_save(lv_event_t *ev)
     }
 }
 
-static void on_delete_confirm(bool yes, void *user)
-{
+static void on_delete_confirm(bool yes, void *user) {
     if (!yes) {
         return;
     }
@@ -175,31 +168,26 @@ static void on_delete_confirm(bool yes, void *user)
     ui_hide_overlay();
 }
 
-static void on_editor_delete(lv_event_t *e)
-{
+static void on_editor_delete(lv_event_t *e) {
     (void)e;
     char body[64];
-    snprintf(body, sizeof(body), "Delete the %02u:%02u feed?",
-             (unsigned)lv_roller_get_selected(s_ed_hour),
+    snprintf(body, sizeof(body), "Delete the %02u:%02u feed?", (unsigned)lv_roller_get_selected(s_ed_hour),
              (unsigned)lv_roller_get_selected(s_ed_min));
-    ui_confirm("Delete feed", body, "Delete", "Keep", true,
-               on_delete_confirm, (void *)(intptr_t)s_edit_index);
+    ui_confirm("Delete feed", body, "Delete", "Keep", true, on_delete_confirm, (void *)(intptr_t)s_edit_index);
 }
 
-static void on_editor_cancel(lv_event_t *e)
-{
+static void on_editor_cancel(lv_event_t *e) {
     (void)e;
     ui_hide_overlay();
 }
 
 /* Called by the dispatcher when SET_SCHEDULE_ENTRY resolves. */
-void ui_schedule_on_cmd_ack(bool ok, uint8_t nack_reason)
-{
+void ui_schedule_on_cmd_ack(bool ok, uint8_t nack_reason) {
     if (ui_current_overlay() != s_editor) {
         return;
     }
     if (ok) {
-        ui_hide_overlay();               /* only pop on a confirmed ACK */
+        ui_hide_overlay(); /* only pop on a confirmed ACK */
         ui_toast("Schedule saved", UI_TOAST_OK);
     } else {
         lv_obj_clear_state(s_btn_save, LV_STATE_DISABLED);
@@ -219,8 +207,7 @@ void ui_schedule_on_cmd_ack(bool ok, uint8_t nack_reason)
 /* Editor build                                                        */
 /* ------------------------------------------------------------------ */
 
-static void editor_days_btn(lv_obj_t *parent, int d, const char *label)
-{
+static void editor_days_btn(lv_obj_t *parent, int d, const char *label) {
     lv_obj_t *b = ui_make_btn(parent, UI_BTN_GHOST);
     lv_obj_set_style_bg_color(b, SAQ_C_PRIMARY, LV_PART_MAIN | LV_STATE_CHECKED);
     lv_obj_set_style_text_color(b, SAQ_C_ON_PRIMARY, LV_PART_MAIN | LV_STATE_CHECKED);
@@ -233,8 +220,7 @@ static void editor_days_btn(lv_obj_t *parent, int d, const char *label)
     s_ed_days[d] = b;
 }
 
-static void make_roller_options(char *buf, size_t cap, int n)
-{
+static void make_roller_options(char *buf, size_t cap, int n) {
     buf[0] = '\0';
     for (int i = 0; i < n; i++) {
         char item[6];
@@ -243,8 +229,7 @@ static void make_roller_options(char *buf, size_t cap, int n)
     }
 }
 
-void ui_editor_open(void)
-{
+void ui_editor_open(void) {
     /* defaults for a new entry: next round hour, every day, default portion */
     uint8_t hour = 8;
     uint8_t minute = 0;
@@ -292,18 +277,16 @@ void ui_editor_open(void)
     ui_show_overlay(s_editor);
 }
 
-static void on_ed_slider(lv_event_t *e)
-{
+static void on_ed_slider(lv_event_t *e) {
     lv_obj_t *sl = lv_event_get_target(e);
     char buf[24];
     snprintf(buf, sizeof(buf), "%u g", (unsigned)(lv_slider_get_value(sl) / 2));
     lv_label_set_text(s_lbl_ed_portion, buf);
 }
 
-static void build_editor(void)
-{
+static void build_editor(void) {
     s_editor = ui_overlay_create(s_edit_index < 0 ? "Add feed" : "Edit feed");
-    lv_obj_t *content = s_editor;      /* overlay content container */
+    lv_obj_t *content = s_editor; /* overlay content container */
 
     lv_obj_t *lbl_time = ui_make_label(content, SAQ_FONT_BODY, SAQ_C_TEXT_MUTED);
     lv_obj_set_pos(lbl_time, SAQ_SP_LG, 24);
@@ -380,8 +363,7 @@ static void build_editor(void)
 /* List build + refresh                                                */
 /* ------------------------------------------------------------------ */
 
-static void rebuild_rows(void)
-{
+static void rebuild_rows(void) {
     lv_obj_clean(s_list);
 
     const bool can_edit = editable();
@@ -445,16 +427,14 @@ static void rebuild_rows(void)
     }
 }
 
-void ui_schedule_refresh(void)
-{
+void ui_schedule_refresh(void) {
     /* The feeder's count is authoritative; a mismatch (e.g. after an
      * optimistic apply was NACKed) shows as rows beyond the reported
      * count — flagged, not silently trusted. */
     rebuild_rows();
 }
 
-void ui_schedule_create(lv_obj_t *parent)
-{
+void ui_schedule_create(lv_obj_t *parent) {
     s_list = lv_obj_create(parent);
     lv_obj_remove_style_all(s_list);
     lv_obj_add_style(s_list, &saq_style_screen, LV_PART_MAIN);

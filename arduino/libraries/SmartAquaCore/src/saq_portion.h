@@ -21,18 +21,18 @@ extern "C" {
  * run the motor indefinitely). If your auger legitimately needs longer,
  * change the constant here, in one place, and re-flash both apps.
  */
-#define SAQ_MAX_FEED_MS        30000u
+#define SAQ_MAX_FEED_MS 30000u
 
 /* SAQ_PORTION_MIN_G / SAQ_PORTION_MAX_G live in saq_protocol.h. */
 
 /* Default calibration: milliseconds of auger run per gram. 6 s/g is a
  * typical starting point for a small screw feeder; refine with the guided
  * calibration flow on the HMI Settings screen. */
-#define SAQ_MS_PER_G_DEFAULT   6000u
+#define SAQ_MS_PER_G_DEFAULT 6000u
 
 /* Shortest run we will ever command — avoids a relay click with no food
  * moved when calibration is aggressive. */
-#define SAQ_MIN_FEED_MS        250u
+#define SAQ_MIN_FEED_MS 250u
 
 /**
  * Milliseconds the auger should run for `portion_g` grams at the given

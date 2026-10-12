@@ -28,11 +28,11 @@ typedef struct {
 
 /* ---- calendar helpers on local epoch seconds ---------------------- */
 
-uint8_t  saq_wday_of(uint32_t local_epoch_s);   /* 0 = Sunday */
-uint8_t  saq_hour_of(uint32_t local_epoch_s);
-uint8_t  saq_minute_of(uint32_t local_epoch_s);
-uint32_t saq_epoch_min_of(uint32_t local_epoch_s);  /* local_epoch / 60 */
-uint32_t saq_day_index_of(uint32_t local_epoch_s);  /* local_epoch / 86400 */
+uint8_t saq_wday_of(uint32_t local_epoch_s); /* 0 = Sunday */
+uint8_t saq_hour_of(uint32_t local_epoch_s);
+uint8_t saq_minute_of(uint32_t local_epoch_s);
+uint32_t saq_epoch_min_of(uint32_t local_epoch_s); /* local_epoch / 60 */
+uint32_t saq_day_index_of(uint32_t local_epoch_s); /* local_epoch / 86400 */
 
 /* ---- validation ---------------------------------------------------- */
 
@@ -54,8 +54,8 @@ bool saq_sched_entry_valid(const saq_sched_entry_t *e);
  * Call repeatedly while it returns >= 0 (and update the stamp when firing)
  * so two entries at the same minute both feed.
  */
-int saq_sched_find_due(const saq_sched_entry_t *entries, uint8_t count,
-                       const uint32_t *last_fired_min, uint32_t local_epoch_s);
+int saq_sched_find_due(const saq_sched_entry_t *entries, uint8_t count, const uint32_t *last_fired_min,
+                       uint32_t local_epoch_s);
 
 /* ---- "next feed" (HMI side) ---------------------------------------- */
 
@@ -68,9 +68,8 @@ int saq_sched_find_due(const saq_sched_entry_t *entries, uint8_t count,
  * Searches up to 8 days ahead (7 days + today) — bounded, no loops forever
  * on a disabled-but-present schedule.
  */
-bool saq_sched_next_due(const saq_sched_entry_t *entries, uint8_t count,
-                        uint32_t local_epoch_s,
-                        uint32_t *out_epoch_s, uint8_t *out_index);
+bool saq_sched_next_due(const saq_sched_entry_t *entries, uint8_t count, uint32_t local_epoch_s, uint32_t *out_epoch_s,
+                        uint8_t *out_index);
 
 /* ---- display helpers (HMI side) ------------------------------------ */
 

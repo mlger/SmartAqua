@@ -3,9 +3,9 @@
  */
 
 #include "saq_link.h"
+#include "feeder_clock.h"
 #include "feeder_config.h"
 #include "feeder_store.h"
-#include "feeder_clock.h"
 #include "relay_control.h"
 #include "saq_portion.h"
 #include "saq_schedule.h"
@@ -27,23 +27,23 @@ typedef struct {
     uint8_t from[6];
 } rx_item_t;
 
-static bool          s_paired = false;
-static uint8_t       s_peer_mac[6] = {0};
-static bool          s_peer_added = false;
-static uint32_t      s_tx_seq = 0;
-static saq_dedupe_t  s_dedupe;
+static bool s_paired = false;
+static uint8_t s_peer_mac[6] = {0};
+static bool s_peer_added = false;
+static uint32_t s_tx_seq = 0;
+static saq_dedupe_t s_dedupe;
 static QueueHandle_t s_rxq = NULL;
 
-static bool          s_pair_window = false;
-static uint32_t      s_pair_window_ms = 0;
-static uint32_t      s_last_beacon_ms = 0;
-static uint32_t      s_last_status_ms = 0;
+static bool s_pair_window = false;
+static uint32_t s_pair_window_ms = 0;
+static uint32_t s_last_beacon_ms = 0;
+static uint32_t s_last_status_ms = 0;
 static feeder_link_evt_t s_pending_evt = FEEDER_LINK_EVT_NONE;
 
 /* Authoritative in-RAM copies (NVS is the durable record). */
-static saq_sched_t  s_sched;
-static uint16_t     s_ms_per_g = SAQ_MS_PER_G_DEFAULT;
-static uint16_t     s_default_portion_g = 3;
+static saq_sched_t s_sched;
+static uint16_t s_ms_per_g = SAQ_MS_PER_G_DEFAULT;
+static uint16_t s_default_portion_g = 3;
 
 /* Counters. */
 static uint32_t s_rx_frames = 0, s_rx_dups = 0, s_rx_foreign = 0, s_tx_frames = 0;
@@ -54,8 +54,7 @@ static const uint8_t BROADCAST_MAC[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 /* Peer management                                                     */
 /* ------------------------------------------------------------------ */
 
-static void peer_add(bool encrypted)
-{
+static void peer_add(bool encrypted) {
     if (s_peer_added) {
         esp_now_del_peer(s_peer_mac);
         s_peer_added = false;
@@ -80,8 +79,7 @@ static void peer_add(bool encrypted)
 /* Sending                                                             */
 /* ------------------------------------------------------------------ */
 
-static bool send_frame(saq_frame_t *f)
-{
+static bool send_frame(saq_frame_t *f) {
     if (!s_peer_added) {
         return false;
     }
@@ -97,27 +95,24 @@ static bool send_frame(saq_frame_t *f)
     return false;
 }
 
-static uint32_t next_tx_seq(void)
-{
+static uint32_t next_tx_seq(void) {
     s_tx_seq++;
     return s_tx_seq;
 }
 
-static void send_ack_for(const saq_frame_t *req, uint8_t result)
-{
+static void send_ack_for(const saq_frame_t *req, uint8_t result) {
     saq_frame_t f;
     memset(&f, 0, sizeof(f));
     f.type = SAQ_T_ACK;
     f.flags = SAQ_FLAG_IS_RESPONSE;
     f.seq = next_tx_seq();
-    f.epoch_s = clock_epoch();       /* 0 when unsynced — informative */
+    f.epoch_s = clock_epoch(); /* 0 when unsynced — informative */
     f.ack.ack_seq = req->seq;
     f.ack.result = result;
     send_frame(&f);
 }
 
-static void send_nack_for(const saq_frame_t *req, uint8_t reason)
-{
+static void send_nack_for(const saq_frame_t *req, uint8_t reason) {
     saq_frame_t f;
     memset(&f, 0, sizeof(f));
     f.type = SAQ_T_NACK;
@@ -129,8 +124,7 @@ static void send_nack_for(const saq_frame_t *req, uint8_t reason)
     send_frame(&f);
 }
 
-static void send_status(void)
-{
+static void send_status(void) {
     saq_frame_t f;
     memset(&f, 0, sizeof(f));
     f.type = SAQ_T_STATUS;
@@ -140,7 +134,7 @@ static void send_status(void)
     f.status.clock_conf = clock_synced() ? 1 : 0;
     f.status.sched_count = s_sched.count;
     f.status.last_feed_epoch = store_log_last_feed_epoch();
-    f.status.hopper_pct = SAQ_HOPPER_UNKNOWN;   /* no sensor fitted (docs/09) */
+    f.status.hopper_pct = SAQ_HOPPER_UNKNOWN; /* no sensor fitted (docs/09) */
     f.status.last_log_seq = store_log_last_seq();
     f.status.uptime_s = millis() / 1000u;
     f.status.link_seq = s_tx_seq;
@@ -149,8 +143,7 @@ static void send_status(void)
     send_frame(&f);
 }
 
-static void send_beacon(void)
-{
+static void send_beacon(void) {
     if (!s_peer_added) {
         return;
     }
@@ -178,21 +171,20 @@ static void send_beacon(void)
 /* Receive callback — WiFi task context: filter, decode, enqueue       */
 /* ------------------------------------------------------------------ */
 
-static void on_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len)
-{
+static void on_recv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
     if ((info == NULL) || (data == NULL) || (len <= 0)) {
         return;
     }
 
     const bool from_peer = (memcmp(info->src_addr, s_peer_mac, 6) == 0);
     if (!from_peer && !s_pair_window) {
-        s_rx_foreign++;            /* docs/07: drop frames from unknown senders */
+        s_rx_foreign++; /* docs/07: drop frames from unknown senders */
         return;
     }
 
     saq_frame_t f;
     if (saq_decode(data, (size_t)len, &f) != SAQ_CODEC_OK) {
-        return;                    /* reject, never guess — and count nothing */
+        return; /* reject, never guess — and count nothing */
     }
     s_rx_frames++;
 
@@ -215,8 +207,7 @@ static void on_recv(const esp_now_recv_info_t *info, const uint8_t *data, int le
 /* Command handling — loop() context                                   */
 /* ------------------------------------------------------------------ */
 
-static void handle_feed(const saq_frame_t *f)
-{
+static void handle_feed(const saq_frame_t *f) {
     /* Calibration test feeds arrive as portion 0 + forced_ms; normal feeds
      * carry a portion and let the node's calibration decide the duration. */
     if (f->feed.forced_ms == 0) {
@@ -230,9 +221,8 @@ static void handle_feed(const saq_frame_t *f)
         return;
     }
 
-    const uint16_t ms = (f->feed.forced_ms != 0) ?
-                        f->feed.forced_ms :
-                        (uint16_t)saq_portion_ms(f->feed.portion_g, s_ms_per_g);
+    const uint16_t ms =
+        (f->feed.forced_ms != 0) ? f->feed.forced_ms : (uint16_t)saq_portion_ms(f->feed.portion_g, s_ms_per_g);
 
     const relay_start_result_t r = relay_start(ms, f->feed.portion_g, SAQ_TRIGGER_MANUAL_HMI);
     if (r == RELAY_START_BUSY) {
@@ -242,8 +232,7 @@ static void handle_feed(const saq_frame_t *f)
     send_ack_for(f, SAQ_RES_OK);
 }
 
-static void handle_set_time(const saq_frame_t *f)
-{
+static void handle_set_time(const saq_frame_t *f) {
     if (f->set_time.epoch == 0) {
         /* A zero epoch means the sender's clock is unsynced (docs/07) —
          * there is nothing usable to adopt. */
@@ -257,8 +246,7 @@ static void handle_set_time(const saq_frame_t *f)
     send_ack_for(f, SAQ_RES_OK);
 }
 
-static void handle_set_sched_entry(const saq_frame_t *f)
-{
+static void handle_set_sched_entry(const saq_frame_t *f) {
     const uint8_t idx = f->sched_entry.index;
     const uint8_t count = f->sched_entry.count;
     if ((count > SAQ_SCHED_MAX) || (count == 0) || (idx >= count)) {
@@ -279,15 +267,13 @@ static void handle_set_sched_entry(const saq_frame_t *f)
         send_nack_for(f, SAQ_RES_BAD_PAYLOAD);
         return;
     }
-    Serial.printf("[FEEDER] schedule slot %u/%u = %02u:%02u, %u g\n",
-                  (unsigned)idx, (unsigned)count,
+    Serial.printf("[FEEDER] schedule slot %u/%u = %02u:%02u, %u g\n", (unsigned)idx, (unsigned)count,
                   (unsigned)f->sched_entry.entry.hour, (unsigned)f->sched_entry.entry.minute,
                   (unsigned)f->sched_entry.entry.portion_g);
     send_ack_for(f, SAQ_RES_OK);
 }
 
-static void handle_status_req(const saq_frame_t *f)
-{
+static void handle_status_req(const saq_frame_t *f) {
     send_ack_for(f, SAQ_RES_OK);
 
     /* Replay retained entries newer than since_seq, then the status frame.
@@ -319,12 +305,11 @@ static void handle_status_req(const saq_frame_t *f)
     send_status();
 }
 
-static void handle_pair_req(const saq_frame_t *f, const uint8_t from[6])
-{
+static void handle_pair_req(const saq_frame_t *f, const uint8_t from[6]) {
     /* Accepted only inside the pairing window — enforced by the filter in
      * on_recv (frames from unknown MACs are dropped otherwise). */
     if (f->pair_req.node_id != SAQ_NODE_ID) {
-        return;                    /* beacon for someone else's feeder */
+        return; /* beacon for someone else's feeder */
     }
 
     memcpy(s_peer_mac, from, 6);
@@ -343,13 +328,11 @@ static void handle_pair_req(const saq_frame_t *f, const uint8_t from[6])
     peer_add(true);
     send_status();
 
-    Serial.printf("[FEEDER] paired with HMI %02X:%02X:%02X:%02X:%02X:%02X\n",
-                  s_peer_mac[0], s_peer_mac[1], s_peer_mac[2],
-                  s_peer_mac[3], s_peer_mac[4], s_peer_mac[5]);
+    Serial.printf("[FEEDER] paired with HMI %02X:%02X:%02X:%02X:%02X:%02X\n", s_peer_mac[0], s_peer_mac[1],
+                  s_peer_mac[2], s_peer_mac[3], s_peer_mac[4], s_peer_mac[5]);
 }
 
-static void handle_set_config(const saq_frame_t *f)
-{
+static void handle_set_config(const saq_frame_t *f) {
     if ((f->set_config.ms_per_g < 100) || (f->set_config.ms_per_g > SAQ_MAX_FEED_MS) ||
         (f->set_config.default_portion_g < SAQ_PORTION_MIN_G) ||
         (f->set_config.default_portion_g > SAQ_PORTION_MAX_G)) {
@@ -359,13 +342,11 @@ static void handle_set_config(const saq_frame_t *f)
     s_ms_per_g = f->set_config.ms_per_g;
     s_default_portion_g = f->set_config.default_portion_g;
     store_save_cfg(s_ms_per_g, s_default_portion_g);
-    Serial.printf("[FEEDER] config: %u ms/g, default %u g\n",
-                  (unsigned)s_ms_per_g, (unsigned)s_default_portion_g);
+    Serial.printf("[FEEDER] config: %u ms/g, default %u g\n", (unsigned)s_ms_per_g, (unsigned)s_default_portion_g);
     send_ack_for(f, SAQ_RES_OK);
 }
 
-static void handle_frame(rx_item_t *it)
-{
+static void handle_frame(rx_item_t *it) {
     saq_frame_t *f = &it->f;
 
     /* Dedupe FIRST — a retry must not feed twice, but must be ACKed again
@@ -381,16 +362,28 @@ static void handle_frame(rx_item_t *it)
     }
 
     switch (f->type) {
-    case SAQ_T_FEED:               handle_feed(f); break;
+    case SAQ_T_FEED:
+        handle_feed(f);
+        break;
     case SAQ_T_STOP:
-        relay_emergency_off();     /* idempotent; the callback already fired */
+        relay_emergency_off(); /* idempotent; the callback already fired */
         send_ack_for(f, SAQ_RES_OK);
         break;
-    case SAQ_T_SET_TIME:           handle_set_time(f); break;
-    case SAQ_T_SET_SCHEDULE_ENTRY: handle_set_sched_entry(f); break;
-    case SAQ_T_STATUS_REQ:         handle_status_req(f); break;
-    case SAQ_T_PAIR_REQ:           handle_pair_req(f, it->from); break;
-    case SAQ_T_SET_CONFIG:         handle_set_config(f); break;
+    case SAQ_T_SET_TIME:
+        handle_set_time(f);
+        break;
+    case SAQ_T_SET_SCHEDULE_ENTRY:
+        handle_set_sched_entry(f);
+        break;
+    case SAQ_T_STATUS_REQ:
+        handle_status_req(f);
+        break;
+    case SAQ_T_PAIR_REQ:
+        handle_pair_req(f, it->from);
+        break;
+    case SAQ_T_SET_CONFIG:
+        handle_set_config(f);
+        break;
     default:
         /* Decode rejects unknown types; reaching here means a type that is
          * valid on the wire but not implemented by this firmware. */
@@ -405,8 +398,7 @@ static void handle_frame(rx_item_t *it)
 /* Public API                                                          */
 /* ------------------------------------------------------------------ */
 
-feeder_link_evt_t link_init(void)
-{
+feeder_link_evt_t link_init(void) {
     memset(&s_sched, 0, sizeof(s_sched));
     store_load_sched(&s_sched);
     store_load_cfg(&s_ms_per_g, &s_default_portion_g);
@@ -441,27 +433,24 @@ feeder_link_evt_t link_init(void)
     }
 
     if (store_load_peer(s_peer_mac)) {
-        peer_add(true);            /* already paired: encrypted from the start */
+        peer_add(true); /* already paired: encrypted from the start */
         s_paired = true;
-        Serial.printf("[FEEDER] paired from NVS: %02X:%02X:%02X:%02X:%02X:%02X\n",
-                      s_peer_mac[0], s_peer_mac[1], s_peer_mac[2],
-                      s_peer_mac[3], s_peer_mac[4], s_peer_mac[5]);
+        Serial.printf("[FEEDER] paired from NVS: %02X:%02X:%02X:%02X:%02X:%02X\n", s_peer_mac[0], s_peer_mac[1],
+                      s_peer_mac[2], s_peer_mac[3], s_peer_mac[4], s_peer_mac[5]);
     } else {
         Serial.println("[FEEDER] not paired — hold the button 3 s to pair");
     }
     return FEEDER_LINK_EVT_NONE;
 }
 
-void link_open_pair_window(void)
-{
+void link_open_pair_window(void) {
     s_pair_window = true;
     s_pair_window_ms = millis();
     s_pending_evt = FEEDER_LINK_EVT_PAIR_WINDOW_OPEN;
     Serial.println("[FEEDER] pairing window open for 60 s");
 }
 
-void link_tick(void)
-{
+void link_tick(void) {
     /* Pairing window bookkeeping */
     if (s_pair_window) {
         if ((uint32_t)(millis() - s_pair_window_ms) > (SAQ_PAIR_WINDOW_S * 1000u)) {
@@ -491,25 +480,21 @@ void link_tick(void)
     }
 }
 
-bool link_paired(void)
-{
+bool link_paired(void) {
     return s_paired;
 }
 
-bool link_pair_window_open(void)
-{
+bool link_pair_window_open(void) {
     return s_pair_window;
 }
 
-void link_sched_snapshot(saq_sched_t *out)
-{
+void link_sched_snapshot(saq_sched_t *out) {
     if (out != NULL) {
         *out = s_sched;
     }
 }
 
-void link_cfg(uint16_t *ms_per_g, uint16_t *default_portion_g)
-{
+void link_cfg(uint16_t *ms_per_g, uint16_t *default_portion_g) {
     if (ms_per_g != NULL) {
         *ms_per_g = s_ms_per_g;
     }
@@ -518,7 +503,15 @@ void link_cfg(uint16_t *ms_per_g, uint16_t *default_portion_g)
     }
 }
 
-uint32_t link_rx_frames(void)  { return s_rx_frames; }
-uint32_t link_rx_dups(void)    { return s_rx_dups; }
-uint32_t link_rx_foreign(void) { return s_rx_foreign; }
-uint32_t link_tx_frames(void)  { return s_tx_frames; }
+uint32_t link_rx_frames(void) {
+    return s_rx_frames;
+}
+uint32_t link_rx_dups(void) {
+    return s_rx_dups;
+}
+uint32_t link_rx_foreign(void) {
+    return s_rx_foreign;
+}
+uint32_t link_tx_frames(void) {
+    return s_tx_frames;
+}

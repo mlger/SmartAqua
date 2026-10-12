@@ -29,40 +29,40 @@
 
 /* ---- Spacing — 4 px base scale --------------------------------------- */
 
-#define SAQ_SP_XS   4
-#define SAQ_SP_SM   8
-#define SAQ_SP_MD   16
-#define SAQ_SP_LG   24
-#define SAQ_SP_XL   32
-#define SAQ_SP_2XL  48
+#define SAQ_SP_XS  4
+#define SAQ_SP_SM  8
+#define SAQ_SP_MD  16
+#define SAQ_SP_LG  24
+#define SAQ_SP_XL  32
+#define SAQ_SP_2XL 48
 
 /* ---- Radii ------------------------------------------------------------ */
 
-#define SAQ_R_SM    4
-#define SAQ_R_MD    8
-#define SAQ_R_PILL  20
+#define SAQ_R_SM   4
+#define SAQ_R_MD   8
+#define SAQ_R_PILL 20
 
 /* ---- Typography -------------------------------------------------------- */
 
 /* Montserrat sizes enabled in lv_conf.h (tokens carry 16/20/24; 12 is the
  * diagnostics/hex font, 30 the Home readout). */
-#define SAQ_FONT_SMALL    (&lv_font_montserrat_12)
-#define SAQ_FONT_CAPTION  (&lv_font_montserrat_16)
-#define SAQ_FONT_BODY     (&lv_font_montserrat_20)
-#define SAQ_FONT_HEADING  (&lv_font_montserrat_24)
-#define SAQ_FONT_HERO     (&lv_font_montserrat_30)
+#define SAQ_FONT_SMALL   (&lv_font_montserrat_12)
+#define SAQ_FONT_CAPTION (&lv_font_montserrat_16)
+#define SAQ_FONT_BODY    (&lv_font_montserrat_20)
+#define SAQ_FONT_HEADING (&lv_font_montserrat_24)
+#define SAQ_FONT_HERO    (&lv_font_montserrat_30)
 
 /* ---- Layout ------------------------------------------------------------ */
 
-#define SAQ_SCREEN_W       800
-#define SAQ_SCREEN_H       480
-#define SAQ_STATUSBAR_H    40
-#define SAQ_TABBAR_H       64
-#define SAQ_CONTENT_H      (SAQ_SCREEN_H - SAQ_STATUSBAR_H - SAQ_TABBAR_H)  /* 376 */
-#define SAQ_TOUCH_MIN      44
-#define SAQ_BTN_H          56
-#define SAQ_ROW_H          56
-#define SAQ_EDGE_DEAD      20
+#define SAQ_SCREEN_W    800
+#define SAQ_SCREEN_H    480
+#define SAQ_STATUSBAR_H 40
+#define SAQ_TABBAR_H    64
+#define SAQ_CONTENT_H   (SAQ_SCREEN_H - SAQ_STATUSBAR_H - SAQ_TABBAR_H) /* 376 */
+#define SAQ_TOUCH_MIN   44
+#define SAQ_BTN_H       56
+#define SAQ_ROW_H       56
+#define SAQ_EDGE_DEAD   20
 
 /* ---- Shared styles (defined once in ui_theme.cpp) --------------------- */
 

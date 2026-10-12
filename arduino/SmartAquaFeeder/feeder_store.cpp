@@ -15,8 +15,7 @@ static Preferences prefs;
 static feeder_log_entry_t s_ring[FEEDER_LOG_RING];
 static uint32_t s_last_seq = 0;
 
-void store_init(void)
-{
+void store_init(void) {
     prefs.begin(FEEDER_NS_CFG, false);
     /* log lives in its own namespace so a schedule-heavy key set cannot
      * evict it — Preferences namespaces are independent NVS entries */
@@ -34,8 +33,7 @@ void store_init(void)
     prefs.end();
 }
 
-bool store_load_sched(saq_sched_t *s)
-{
+bool store_load_sched(saq_sched_t *s) {
     if (s == NULL) {
         return false;
     }
@@ -59,8 +57,7 @@ bool store_load_sched(saq_sched_t *s)
         }
         /* Refuse to act on a corrupt entry — rule: reject, never guess. */
         for (uint8_t i = 0; i < count; i++) {
-            if (!saq_sched_entry_valid(&s->entries[i]) &&
-                (s->entries[i].flags & SAQ_SCHED_FLAG_ENABLED)) {
+            if (!saq_sched_entry_valid(&s->entries[i]) && (s->entries[i].flags & SAQ_SCHED_FLAG_ENABLED)) {
                 s->entries[i].flags &= (uint8_t)~SAQ_SCHED_FLAG_ENABLED;
             }
         }
@@ -70,8 +67,7 @@ bool store_load_sched(saq_sched_t *s)
     return true;
 }
 
-bool store_save_sched(const saq_sched_t *s)
-{
+bool store_save_sched(const saq_sched_t *s) {
     if ((s == NULL) || (s->count > SAQ_SCHED_MAX)) {
         return false;
     }
@@ -95,8 +91,7 @@ bool store_save_sched(const saq_sched_t *s)
     return true;
 }
 
-void store_load_cfg(uint16_t *ms_per_g, uint16_t *default_portion_g)
-{
+void store_load_cfg(uint16_t *ms_per_g, uint16_t *default_portion_g) {
     prefs.begin(FEEDER_NS_CFG, true);
     uint16_t ms = prefs.getUShort("ms_per_g", SAQ_MS_PER_G_DEFAULT);
     uint16_t pg = prefs.getUShort("portion_g", 3);
@@ -118,22 +113,20 @@ void store_load_cfg(uint16_t *ms_per_g, uint16_t *default_portion_g)
     }
 }
 
-void store_save_cfg(uint16_t ms_per_g, uint16_t default_portion_g)
-{
+void store_save_cfg(uint16_t ms_per_g, uint16_t default_portion_g) {
     prefs.begin(FEEDER_NS_CFG, false);
     prefs.putUShort("ms_per_g", ms_per_g);
     prefs.putUShort("portion_g", default_portion_g);
     prefs.end();
 }
 
-bool store_load_peer(uint8_t mac[6])
-{
+bool store_load_peer(uint8_t mac[6]) {
     uint8_t stored[6] = {0};
     prefs.begin(FEEDER_NS_CFG, true);
     size_t got = prefs.getBytes("peer_mac", stored, 6);
     prefs.end();
     if (got != 6) {
-        return false;   /* never paired */
+        return false; /* never paired */
     }
     bool all_zero = true;
     for (int i = 0; i < 6; i++) {
@@ -149,37 +142,32 @@ bool store_load_peer(uint8_t mac[6])
     return true;
 }
 
-bool store_save_peer(const uint8_t mac[6])
-{
+bool store_save_peer(const uint8_t mac[6]) {
     prefs.begin(FEEDER_NS_CFG, false);
     prefs.putBytes("peer_mac", mac, 6);
     prefs.end();
     return true;
 }
 
-bool store_have_peer(void)
-{
+bool store_have_peer(void) {
     uint8_t mac[6];
     return store_load_peer(mac);
 }
 
-int32_t store_load_tz(void)
-{
+int32_t store_load_tz(void) {
     prefs.begin(FEEDER_NS_CFG, true);
     int32_t tz = prefs.getInt("tz_s", 0);
     prefs.end();
     return tz;
 }
 
-void store_save_tz(int32_t tz_s)
-{
+void store_save_tz(int32_t tz_s) {
     prefs.begin(FEEDER_NS_CFG, false);
     prefs.putInt("tz_s", tz_s);
     prefs.end();
 }
 
-bool store_log_append(feeder_log_entry_t *e)
-{
+bool store_log_append(feeder_log_entry_t *e) {
     if (e == NULL) {
         return false;
     }
@@ -197,8 +185,7 @@ bool store_log_append(feeder_log_entry_t *e)
 }
 
 static void log_entry_unused_removed(void) {}
-uint8_t store_log_replay(uint32_t since_seq, feeder_log_entry_t *out, uint8_t max)
-{
+uint8_t store_log_replay(uint32_t since_seq, feeder_log_entry_t *out, uint8_t max) {
     if ((out == NULL) || (s_last_seq == 0)) {
         return 0;
     }
@@ -218,13 +205,11 @@ uint8_t store_log_replay(uint32_t since_seq, feeder_log_entry_t *out, uint8_t ma
     return n;
 }
 
-uint32_t store_log_last_seq(void)
-{
+uint32_t store_log_last_seq(void) {
     return s_last_seq;
 }
 
-uint32_t store_log_last_feed_epoch(void)
-{
+uint32_t store_log_last_feed_epoch(void) {
     if (s_last_seq == 0) {
         return 0;
     }
@@ -232,15 +217,13 @@ uint32_t store_log_last_feed_epoch(void)
     return s_ring[idx].event_epoch;
 }
 
-void store_set_inprog(const feeder_inprog_t *rec)
-{
+void store_set_inprog(const feeder_inprog_t *rec) {
     prefs.begin(FEEDER_NS_CFG, false);
     prefs.putBytes("in_prog", rec, sizeof(*rec));
     prefs.end();
 }
 
-bool store_get_inprog(feeder_inprog_t *rec)
-{
+bool store_get_inprog(feeder_inprog_t *rec) {
     prefs.begin(FEEDER_NS_CFG, true);
     feeder_inprog_t tmp;
     size_t got = prefs.getBytes("in_prog", &tmp, sizeof(tmp));
@@ -254,8 +237,7 @@ bool store_get_inprog(feeder_inprog_t *rec)
     return true;
 }
 
-void store_clear_inprog(void)
-{
+void store_clear_inprog(void) {
     prefs.begin(FEEDER_NS_CFG, false);
     prefs.remove("in_prog");
     prefs.end();

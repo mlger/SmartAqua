@@ -55,15 +55,16 @@ jobs:
         run: ctest --test-dir build/host --output-on-failure
 
   # Enforces .clang-format. Requires clang-format to be installed locally too —
-  # see the note in docs/04-repo-and-git-workflow.md.
+  # see the note in docs/04-repo-and-git-workflow.md. Pinned via pip so the
+  # runner's Ubuntu version cannot change the rules under us.
   format:
     name: clang-format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Install clang-format (pinned)
+        run: pip install "clang-format==18.1.8"
 
       - name: Check C/C++ formatting
         run: |

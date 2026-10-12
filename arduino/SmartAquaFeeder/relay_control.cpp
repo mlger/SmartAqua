@@ -3,9 +3,9 @@
  */
 
 #include "relay_control.h"
-#include "feeder_store.h"
 #include "feeder_clock.h"
 #include "feeder_config.h"
+#include "feeder_store.h"
 #include "saq_portion.h"
 
 #include <Arduino.h>
@@ -14,21 +14,20 @@
 /* Live feed state. Written only from loop() context, except the emergency
  * off path which touches the GPIO alone (see relay_emergency_off). */
 typedef struct {
-    bool     running;        /* energised or finishing up */
-    bool     pending_log;    /* de-energised, log entry still to write */
+    bool running;     /* energised or finishing up */
+    bool pending_log; /* de-energised, log entry still to write */
     uint16_t portion_g;
-    uint16_t run_ms;         /* planned (clamped) duration */
-    uint32_t start_ms;       /* millis() at energise */
-    uint32_t start_epoch;    /* UTC epoch at energise, 0 if unsynced */
-    uint8_t  trigger;
-    bool     was_clamped;
-    bool     emergency;      /* stopped via relay_emergency_off */
+    uint16_t run_ms;      /* planned (clamped) duration */
+    uint32_t start_ms;    /* millis() at energise */
+    uint32_t start_epoch; /* UTC epoch at energise, 0 if unsynced */
+    uint8_t trigger;
+    bool was_clamped;
+    bool emergency; /* stopped via relay_emergency_off */
 } feed_state_t;
 
 static feed_state_t s_feed = {0};
 
-static void relay_pin_off(void)
-{
+static void relay_pin_off(void) {
 #if FEEDER_RELAY_ACTIVE_HIGH
     digitalWrite(FEEDER_RELAY_PIN, LOW);
 #else
@@ -36,8 +35,7 @@ static void relay_pin_off(void)
 #endif
 }
 
-static void relay_pin_on(void)
-{
+static void relay_pin_on(void) {
 #if FEEDER_RELAY_ACTIVE_HIGH
     digitalWrite(FEEDER_RELAY_PIN, HIGH);
 #else
@@ -45,16 +43,14 @@ static void relay_pin_on(void)
 #endif
 }
 
-void relay_init(void)
-{
+void relay_init(void) {
     pinMode(FEEDER_RELAY_PIN, OUTPUT);
-    relay_pin_off();     /* the very first thing: de-energised, always */
+    relay_pin_off(); /* the very first thing: de-energised, always */
     s_feed.running = false;
     s_feed.pending_log = false;
 }
 
-uint32_t relay_clamp_for_test(uint32_t absurd_ms)
-{
+uint32_t relay_clamp_for_test(uint32_t absurd_ms) {
     if (absurd_ms > SAQ_MAX_FEED_MS) {
         return SAQ_MAX_FEED_MS;
     }
@@ -64,8 +60,7 @@ uint32_t relay_clamp_for_test(uint32_t absurd_ms)
     return absurd_ms;
 }
 
-relay_start_result_t relay_start(uint16_t ms, uint16_t portion_g, uint8_t trigger)
-{
+relay_start_result_t relay_start(uint16_t ms, uint16_t portion_g, uint8_t trigger) {
     if (s_feed.running || s_feed.pending_log) {
         return RELAY_START_BUSY;
     }
@@ -102,8 +97,7 @@ relay_start_result_t relay_start(uint16_t ms, uint16_t portion_g, uint8_t trigge
     return RELAY_START_OK;
 }
 
-void relay_emergency_off(void)
-{
+void relay_emergency_off(void) {
     /* GPIO only — safe from the ESP-NOW receive callback. */
     relay_pin_off();
     if (s_feed.running) {
@@ -113,8 +107,7 @@ void relay_emergency_off(void)
     }
 }
 
-static void relay_finalize(void)
-{
+static void relay_finalize(void) {
     if (!s_feed.pending_log) {
         return;
     }
@@ -144,8 +137,7 @@ static void relay_finalize(void)
     s_feed.pending_log = false;
 }
 
-void relay_tick(void)
-{
+void relay_tick(void) {
     if (s_feed.running) {
         if ((uint32_t)(millis() - s_feed.start_ms) >= (uint32_t)s_feed.run_ms) {
             relay_pin_off();
@@ -158,21 +150,18 @@ void relay_tick(void)
     }
 }
 
-bool relay_active(void)
-{
+bool relay_active(void) {
     return s_feed.running || s_feed.pending_log;
 }
 
-uint32_t relay_elapsed_ms(void)
-{
+uint32_t relay_elapsed_ms(void) {
     if (!s_feed.running) {
         return 0;
     }
     return (uint32_t)(millis() - s_feed.start_ms);
 }
 
-void relay_recover_interrupted(void)
-{
+void relay_recover_interrupted(void) {
     feeder_inprog_t rec;
     if (!store_get_inprog(&rec)) {
         return;
@@ -190,6 +179,5 @@ void relay_recover_interrupted(void)
     store_log_append(&e);
     store_clear_inprog();
 
-    Serial.printf("[FEEDER] recovered interrupted feed: %u g, result=interrupted\n",
-                  (unsigned)rec.portion_g);
+    Serial.printf("[FEEDER] recovered interrupted feed: %u g, result=interrupted\n", (unsigned)rec.portion_g);
 }

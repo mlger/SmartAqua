@@ -16,18 +16,18 @@
 
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /* Result of starting a feed. */
 typedef enum {
     RELAY_START_OK = 0,
-    RELAY_START_BUSY,          /* a feed is already running */
-    RELAY_START_BAD_DURATION,  /* forced_ms out of range (0 only via FEED.forced_ms) */
+    RELAY_START_BUSY,         /* a feed is already running */
+    RELAY_START_BAD_DURATION, /* forced_ms out of range (0 only via FEED.forced_ms) */
 } relay_start_result_t;
 
 void relay_init(void);
-void relay_tick(void);                       /* call from loop() every few ms */
+void relay_tick(void); /* call from loop() every few ms */
 
 /* Start a feed. `ms` is the requested energise duration; the clamp inside
  * is the one from saq_portion.h and it is not negotiable. `portion_g` and

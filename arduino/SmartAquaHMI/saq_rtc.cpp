@@ -11,9 +11,9 @@
 
 static const char *TAG = "saq_rtc";
 
-#define RTC_I2C_PORT     I2C_NUM_0     /* shared with touch + expander */
-#define RTC_I2C_ADDR     0x51
-#define RTC_I2C_TIMEOUT  pdMS_TO_TICKS(50)
+#define RTC_I2C_PORT    I2C_NUM_0 /* shared with touch + expander */
+#define RTC_I2C_ADDR    0x51
+#define RTC_I2C_TIMEOUT pdMS_TO_TICKS(50)
 
 /* PCF85063A registers (04_RTC_Test / datasheet) */
 #define RTC_REG_CTRL_1   0x00
@@ -26,23 +26,26 @@ static const char *TAG = "saq_rtc";
 #define RTC_REG_MONTHS   0x09
 #define RTC_REG_YEARS    0x0A
 
-#define RTC_CTRL_1_STOP  0x20
+#define RTC_CTRL_1_STOP 0x20
 
-#define RTC_YEAR_BASE    1970u
-#define RTC_YEAR_MIN     2024u     /* sanity floor: an unset chip reads 2000 */
+#define RTC_YEAR_BASE 1970u
+#define RTC_YEAR_MIN  2024u /* sanity floor: an unset chip reads 2000 */
 
-static bool     s_present = false;
-static bool     s_valid = false;
+static bool s_present = false;
+static bool s_valid = false;
 static uint32_t s_epoch_base = 0;
 static uint32_t s_ms_base = 0;
 
 /* ---- BCD + calendar helpers ----------------------------------------- */
 
-static uint8_t bcd2bin(uint8_t v) { return (uint8_t)((v >> 4) * 10u + (v & 0x0Fu)); }
-static uint8_t bin2bcd(uint8_t v) { return (uint8_t)(((v / 10u) << 4) | (v % 10u)); }
+static uint8_t bcd2bin(uint8_t v) {
+    return (uint8_t)((v >> 4) * 10u + (v & 0x0Fu));
+}
+static uint8_t bin2bcd(uint8_t v) {
+    return (uint8_t)(((v / 10u) << 4) | (v % 10u));
+}
 
-static int64_t days_from_civil(int y, unsigned m, unsigned d)
-{
+static int64_t days_from_civil(int y, unsigned m, unsigned d) {
     y -= (m <= 2);
     const int64_t era = (y >= 0 ? y : y - 399) / 400;
     const unsigned yoe = (unsigned)(y - era * 400);
@@ -51,8 +54,7 @@ static int64_t days_from_civil(int y, unsigned m, unsigned d)
     return era * 146097 + (int64_t)doe - 719468;
 }
 
-static void civil_from_days(int64_t z, int *y, unsigned *m, unsigned *d)
-{
+static void civil_from_days(int64_t z, int *y, unsigned *m, unsigned *d) {
     z += 719468;
     const int64_t era = (z >= 0 ? z : z - 146096) / 146097;
     const unsigned doe = (unsigned)(z - era * 146097);
@@ -67,28 +69,23 @@ static void civil_from_days(int64_t z, int *y, unsigned *m, unsigned *d)
 
 /* ---- raw register access (legacy IDF driver, port 0) ---------------- */
 
-static bool rtc_write_regs(uint8_t first, const uint8_t *data, size_t n)
-{
+static bool rtc_write_regs(uint8_t first, const uint8_t *data, size_t n) {
     uint8_t buf[8];
     if (n > 7) {
         return false;
     }
     buf[0] = first;
     memcpy(buf + 1, data, n);
-    return i2c_master_write_to_device(RTC_I2C_PORT, RTC_I2C_ADDR, buf, n + 1,
-                                      RTC_I2C_TIMEOUT) == ESP_OK;
+    return i2c_master_write_to_device(RTC_I2C_PORT, RTC_I2C_ADDR, buf, n + 1, RTC_I2C_TIMEOUT) == ESP_OK;
 }
 
-static bool rtc_read_regs(uint8_t first, uint8_t *data, size_t n)
-{
-    return i2c_master_write_read_device(RTC_I2C_PORT, RTC_I2C_ADDR, &first, 1,
-                                        data, n, RTC_I2C_TIMEOUT) == ESP_OK;
+static bool rtc_read_regs(uint8_t first, uint8_t *data, size_t n) {
+    return i2c_master_write_read_device(RTC_I2C_PORT, RTC_I2C_ADDR, &first, 1, data, n, RTC_I2C_TIMEOUT) == ESP_OK;
 }
 
 /* ---- public API ------------------------------------------------------ */
 
-bool rtc_init(void)
-{
+bool rtc_init(void) {
     uint8_t secs = 0;
     s_present = rtc_read_regs(RTC_REG_SECONDS, &secs, 1);
     if (!s_present) {
@@ -99,9 +96,8 @@ bool rtc_init(void)
     return true;
 }
 
-void rtc_refresh(void)
-{
-    uint8_t regs[7];   /* seconds..years */
+void rtc_refresh(void) {
+    uint8_t regs[7]; /* seconds..years */
     if (!rtc_read_regs(RTC_REG_SECONDS, regs, 7)) {
         s_present = false;
         return;
@@ -116,9 +112,9 @@ void rtc_refresh(void)
     const uint8_t mon = bcd2bin(regs[4] & 0x1Fu);
     const uint16_t year = RTC_YEAR_BASE + bcd2bin(regs[5] & 0xFFu);
 
-    if ((sec > 59) || (min > 59) || (hour > 23) || (day < 1) || (day > 31) ||
-        (mon < 1) || (mon > 12) || (year < RTC_YEAR_MIN)) {
-        s_valid = false;      /* never set, or battery died */
+    if ((sec > 59) || (min > 59) || (hour > 23) || (day < 1) || (day > 31) || (mon < 1) || (mon > 12) ||
+        (year < RTC_YEAR_MIN)) {
+        s_valid = false; /* never set, or battery died */
         return;
     }
     const int64_t days = days_from_civil((int)year, mon, day);
@@ -127,13 +123,11 @@ void rtc_refresh(void)
     s_valid = true;
 }
 
-bool rtc_valid(void)
-{
+bool rtc_valid(void) {
     return s_valid;
 }
 
-bool rtc_get_utc(uint32_t *epoch_out)
-{
+bool rtc_get_utc(uint32_t *epoch_out) {
     if (!s_valid) {
         return false;
     }
@@ -143,8 +137,7 @@ bool rtc_get_utc(uint32_t *epoch_out)
     return true;
 }
 
-bool rtc_set_utc(uint32_t epoch)
-{
+bool rtc_set_utc(uint32_t epoch) {
     if (!s_present) {
         return false;
     }
@@ -154,7 +147,7 @@ bool rtc_set_utc(uint32_t epoch)
     unsigned mo, d;
     civil_from_days(days, &y, &mo, &d);
     if ((y < (int)RTC_YEAR_BASE) || (y > (int)(RTC_YEAR_BASE + 99))) {
-        return false;        /* the year register only holds 00-99 */
+        return false; /* the year register only holds 00-99 */
     }
 
     uint8_t regs[7];
@@ -164,7 +157,7 @@ bool rtc_set_utc(uint32_t epoch)
     regs[3] = bin2bcd((uint8_t)d);
     regs[4] = bin2bcd((uint8_t)mo);
     regs[5] = bin2bcd((uint8_t)(y - (int)RTC_YEAR_BASE));
-    regs[6] = 0;             /* weekdays register — not used */
+    regs[6] = 0; /* weekdays register — not used */
 
     /* Stop the clock, write, restart: the datasheet's recommended order
      * so a tick mid-write cannot corrupt the time. */
