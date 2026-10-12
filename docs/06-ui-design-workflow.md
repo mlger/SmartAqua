@@ -126,7 +126,7 @@ design needs an object LVGL does not have is much cheaper than discovering it mi
 | Button, primary | `lv_btn` + `lv_label` | Style for each state; `LV_STATE_PRESSED` / `DISABLED` |
 | Button, danger (Feed) | `lv_btn` + `lv_label` | Distinct colour; always behind a confirmation |
 | Card / surface | `lv_obj` with a style | `lv_obj_set_style_radius`, `border_width` 1 px |
-| Text, heading / body / caption | `lv_label` | Three Montserrat sizes (16 / 20 / 24), already enabled |
+| Text, heading / body / caption | `lv_label` | Montserrat 16 / 20 / 24 in this repo's defaults (vendor enables 12 as well) |
 | List row | `lv_obj` + `lv_label` | `lv_list` is awkward to style; a plain container row is easier |
 | Toggle / switch | `lv_switch` | Style the indicator and knob separately |
 | Slider (portion) | `lv_slider` | Set `lv_slider_set_range`; show the value in a label |
@@ -151,9 +151,9 @@ design needs an object LVGL does not have is much cheaper than discovering it mi
 
 ## Fonts
 
-The vendor config already enables three Montserrat sizes in `sdkconfig.defaults`
-([05-firmware-workflow.md](05-firmware-workflow.md)): 16, 20, 24. Start there — Montserrat is legible
-and already costs you nothing.
+The vendor config enables four Montserrat sizes in `sdkconfig.defaults`
+([05-firmware-workflow.md](05-firmware-workflow.md)): 12, 16, 20, 24 — this repo's own defaults carry
+16, 20, and 24. Start there — Montserrat is legible and already costs you nothing.
 
 To add a weight or size:
 
@@ -174,7 +174,8 @@ laid out changes every wrap point in the UI.
   need transparency, `LV_IMG_CF_TRUE_COLOR` for opaque images. Both work at `LV_COLOR_DEPTH` 16.
 * Generate **at 1× the size you will display.** This is a 4.3" 800 × 480 panel; a 1024 px icon is
   wasted flash.
-* Size matters more than it looks: an RGB565+alpha icon at 48 × 48 is roughly 4.6 KB of flash. That is
+* Size matters more than it looks: an RGB565+alpha icon at 48 × 48 is 48 × 48 × 3 B ≈ **6.8 KB** of
+  flash (2 B colour + 1 B alpha per pixel; without alpha it is ≈ 4.5 KB). That is
   fine. A **full-screen** 800 × 480 RGB565 background image is about **750 KB** — put images that large
   in PSRAM, or avoid them. Flat colour backgrounds cost nothing and look cleaner on this panel anyway.
 * Keep the source SVG in `design/` (it is text, it diffs, it is small) and the generated `.c` in the
