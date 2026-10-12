@@ -245,16 +245,18 @@ change breaks one of these, the change is wrong or the version needs bumping.
 | 2 | `STOP` | seq 43, epoch 1735689601 | `A5 10 11 01 2B 00 00 00 81 85 74 67` |
 | 3 | `ACK` | seq 1, epoch 1735689600, ack_seq 42, result 0 | `A5 10 80 02 01 00 00 00 80 85 74 67 2A 00 00 00 00` |
 | 4 | `ACK`, no clock | seq 1, epoch 0, ack_seq 42, result 0 | `A5 10 80 02 01 00 00 00 00 00 00 00 2A 00 00 00 00` |
-| 5 | `STATUS` | seq 7, clock_conf 1, sched 4, last feed 1735603200, hopper 80, log 12, uptime 3600 | `A5 10 90 00 07 00 00 00 80 85 74 67 01 04 00 40 73 67 50 0C 00 00 00 10 0E 00 00` |
+| 5 | `STATUS` | seq 7, epoch 1735689600, clock_conf 1, sched 4, last feed 1735603200, hopper 80, log 12, uptime 3600, link_seq 7 | `A5 10 90 00 07 00 00 00 80 85 74 67 01 04 00 34 73 67 50 0C 00 00 00 10 0E 00 00 07 00 00 00` |
 | 6 | Reject | bad magic `B4 10 10 01 ...` | decode returns `MAGIC_MISMATCH` |
 | 7 | Reject | major version `0x20` → byte 1 = `20` | decode returns `VERSION_MISMATCH` |
 | 8 | Reject | unknown type `0x77` | decode returns `UNKNOWN_TYPE` |
 | 9 | Dedupe | `FEED` seq 42 delivered twice | feeds once, ACKs twice |
 
-Byte counts, so a codec bug is obvious at a glance: vector 1 = 16, vector 2 = 14, vectors 3 and 4 = 17,
-vector 5 = 27. Vector 4 exists to pin down that **epoch 0 decodes as "clock unsynced", not as an
-error** — a receiver that rejects a zero timestamp would refuse every frame from a node that has just
-booted, which is exactly when you most want to talk to it.
+Byte counts, so a codec bug is obvious at a glance: vector 1 = 16, vector 2 = 12 (a `STOP` is
+header-only — there is no payload to count), vectors 3 and 4 = 17, vector 5 = 31 (the `STATUS`
+payload is the full 19 bytes of the table above, `link_seq` included). Vector 4 exists to pin down
+that **epoch 0 decodes as "clock unsynced", not as an error** — a receiver that rejects a zero
+timestamp would refuse every frame from a node that has just booted, which is exactly when you most
+want to talk to it.
 
 Every one of these is testable with no board attached. That is the point of keeping the codec in
 `components/` with no IDF dependency — see
