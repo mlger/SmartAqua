@@ -3,8 +3,8 @@
 An automatic fish feeder: a wall-mounted touchscreen controller and a remote feeder node that
 drives an auger motor through a relay.
 
-* **HMI** — Waveshare ESP32-S3-Touch-LCD-4.3B. A 4.3" capacitive touch panel running LVGL 8.4 on
-  ESP-IDF 5.2. Owns the schedule editor, manual feed, history, and settings.
+* **HMI** — Waveshare ESP32-S3-Touch-LCD-4.3B. A 4.3" capacitive touch panel running LVGL 8.4.
+  Owns the schedule editor, manual feed, history, and settings.
 * **Feeder node** — a classic ESP32 devkit next to the tank. Owns the relay, the motor, the clock,
   and the schedule. Feeds on its own even if the network is gone.
 * **Link** — ESP-NOW over 2.4 GHz. No router, no cloud, no subscription.
@@ -51,7 +51,30 @@ and keeps the high-current switching away from the display board. See
 An optional DS3231 RTC module on the feeder node is recommended — the ESP32's internal clock does not
 survive a power cut, and losing the clock silently loses the schedule.
 
-## Quickstart
+## Quickstart (Arduino IDE — the supported path)
+
+The complete system builds in the Arduino IDE with the esp32 core 3.1.x and four libraries —
+no ESP-IDF install required:
+
+```text
+arduino/SmartAquaFeeder/    feeder node firmware (flash this one first)
+arduino/SmartAquaHMI/        touchscreen controller firmware
+arduino/libraries/SmartAquaCore/   shared protocol + logic library (copy to your sketchbook)
+```
+
+Full setup — libraries, versions, board settings, first-run pairing:
+[arduino/README.md](arduino/README.md).
+
+```bash
+scripts/run_host_tests.sh          # protocol + logic unit tests, no board needed
+```
+
+Do not wire a motor to anything until you have worked through
+[docs/08-testing-and-bringup.md](docs/08-testing-and-bringup.md). Step 0 flashes the vendor's
+prebuilt test firmware and proves the board before you write a line of code.
+
+<details>
+<summary>ESP-IDF path (kept for reference)</summary>
 
 Requires ESP-IDF **5.2.x** — see [docs/03-toolchain-setup.md](docs/03-toolchain-setup.md).
 
@@ -63,11 +86,10 @@ cd apps/hmi && idf.py set-target esp32s3 && idf.py -p COM<n> build flash monitor
 cd apps/feeder && idf.py set-target esp32 && idf.py -p COM<n> build flash monitor
 ```
 
-`Ctrl-]` exits the monitor.
+`Ctrl-]` exits the monitor. The `apps/` tree is scaffolding; the Arduino firmware under
+`arduino/` is the complete implementation.
 
-Do not wire a motor to anything until you have worked through
-[docs/08-testing-and-bringup.md](docs/08-testing-and-bringup.md). Step 0 flashes the vendor's
-prebuilt test firmware and proves the board before you write a line of code.
+</details>
 
 ## Documentation
 
@@ -88,14 +110,23 @@ prebuilt test firmware and proves the board before you write a line of code.
 ## Repository layout
 
 ```
-apps/hmi/            ESP32-S3 firmware (LVGL UI)
-apps/feeder/         ESP32 firmware (relay, schedule, ESP-NOW)
+arduino/             Arduino IDE firmware (the complete system)
+  SmartAquaHMI/        ESP32-S3 firmware (LVGL UI, RTC, ESP-NOW commands)
+  SmartAquaFeeder/     ESP32 firmware (relay, schedule, ESP-NOW)
+  libraries/           SmartAquaCore — shared protocol/logic Arduino library
+apps/hmi/            ESP-IDF scaffolding (kept for reference)
+apps/feeder/         ESP-IDF scaffolding (kept for reference)
 components/          Shared code with no IDF dependency (protocol, schedule logic)
 design/              Figma links, design tokens, per-screen specs
 docs/                This documentation
+scripts/             Host tests for the shared logic
 ```
 
 ## Status
 
-Scaffolding and documentation only. No application firmware yet —
-see [docs/09-roadmap-and-milestones.md](docs/09-roadmap-and-milestones.md).
+**Firmware implemented.** The Arduino firmware under `arduino/` implements the full system:
+protocol v1.1 (host-tested against the docs/07 vectors), the feeder's autonomous schedule with
+the fail-safe relay clamp, and the HMI's seven screens (Home, FeedNow, Schedule + editor,
+History, Settings, Diagnostics) with pairing and guided calibration. Both sketches compile
+clean (feeder 0.9 MB, HMI 1.3 MB) — bring-up on hardware, the bench matrix in docs/08, and the
+M5 soak test are what remain. See [docs/09-roadmap-and-milestones.md](docs/09-roadmap-and-milestones.md).

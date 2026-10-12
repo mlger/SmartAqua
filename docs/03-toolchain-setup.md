@@ -3,6 +3,10 @@
 Target: a working `idf.py build` for both apps, plus git and Figma. Everything here is for a Windows
 11 host — which is what this project is developed on.
 
+> **Prefer Arduino IDE?** The complete firmware now builds without ESP-IDF at all — see
+> [../arduino/README.md](../arduino/README.md). This page remains the ESP-IDF (and VS Code)
+> reference for the `apps/` scaffolding and for anyone who wants the IDF workflow.
+
 ## 1. ESP-IDF 5.2.x
 
 The two apps require different IDF feature sets, so pin one version and use it for both:
