@@ -137,13 +137,19 @@ otadata,     data, ota,     0xf000,   0x2000,
 phy_init,    data, phy,     0x11000,  0x1000,
 ota_0,       app,  ota_0,   0x20000,  0x180000,
 ota_1,       app,  ota_1,   0x1A0000, 0x180000,
-nvs_keys,    data, nvs_keys,0x320000, 0x1000,   encrypted
+nvs_keys,    data, nvs_keys,0x320000, 0x1000,
 ```
 
 Two 1.5 MB app slots plus NVS fits comfortably in 4 MB. Check your actual binary size with
 `idf.py size` before committing — if the app grows past the slot, the build fails at image creation
 with a clear error, but only if you have the custom table in place. With the default single-slot table
 you would discover the problem later, at OTA time.
+
+The `nvs_keys` partition is reserved for NVS encryption keys but carries **no `encrypted` flag yet**,
+because flash encryption is not enabled in `sdkconfig.defaults`. The flag describes what the partition
+holds; enabling encryption later means adding the flag back *and* turning on
+`CONFIG_SECURE_FLASH_ENC_ENABLED`. Leave both off until you actually want encryption — a flag without
+the matching config invites a confusing build error.
 
 ## NVS layout
 
